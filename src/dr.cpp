@@ -8,6 +8,10 @@
 
 namespace XLABEL {
 
+  /*
+    This code really needs improving...
+  */
+  
   DRef::DRef( const std::string &a_path ) : path{ a_path } {
     initialised = false;
     path        = a_path;

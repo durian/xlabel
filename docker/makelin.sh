@@ -33,6 +33,8 @@ if [ -f "../src/build-lin/${PLGBASE}.xpl" ]; then
     echo cp ../bin/${PLGBASE}/${DIR}${PLGBASE}.xpl ~/xplane11/Resources/plugins/${PLGBASE}/$DIR
     echo cp ../bin/${PLGBASE}/${DIR}${PLGBASE}.xpl /a/X-Plane11.50b/Resources/plugins/${PLGBASE}/$DIR
     echo cp ../bin/${PLGBASE}/${DIR}${PLGBASE}.xpl ~/xplane11c/Resources/plugins/${PLGBASE}/$DIR
+    #
+    echo cp -r ../bin/${PLGBASE} ~/xplane11b/Resources/plugins/
 else
     echo "${RED}"
     echo "ERROR"

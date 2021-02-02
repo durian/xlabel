@@ -44,7 +44,8 @@ static void will_be_deleted(    XPLMMapLayerID layer, void * inRefcon);
 
 XPLMCommandRef toggle_label_cmd;
 bool show_label = false;
-
+int  label_kind = 0;
+  
 DRefInt dr_tcas_num_acf{"sim/cockpit2/tcas/indicators/tcas_num_acf"};
 DRefInt dr_override_TCAS{"sim/operation/override/override_TCAS"};
 DRefInt dr_acf_modeS_id{"sim/aircraft/view/acf_modeS_id"};
@@ -61,9 +62,9 @@ DRefFloatArray dr_tcas_pos_ele{"sim/cockpit2/tcas/targets/position/ele"};
 DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
 DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 */
-DRefFloatArray dr_rel_dist_ntrs{"sim/cockpit2/tcas/indicators/relative_distance_mtrs"};
-DRefFloatArray dr_ref_alt_mtr{"sim/cockpit2/tcas/indicators/relative_altitude_mtrs"};
-DRefFloatArray dr_vertival_speed{"sim/cockpit2/tcas/targets/position/vertical_speed"};
+DRefFloatArray dr_rel_dist_mtrs{"sim/cockpit2/tcas/indicators/relative_distance_mtrs"};
+DRefFloatArray dr_ref_alt_mtrs{"sim/cockpit2/tcas/indicators/relative_altitude_mtrs"};
+DRefFloatArray dr_vertical_speed{"sim/cockpit2/tcas/targets/position/vertical_speed"};
 DRefFloatArray dr_V_msc{"sim/cockpit2/tcas/targets/position/V_msc"};
 DRefIntArray   dr_tcas_modeS{"sim/cockpit2/tcas/targets/modeS_id"};
 bool get_tcas_positions();
@@ -83,7 +84,9 @@ bool get_tcas_positions() {
     dr_tcas_pos_x.get_all();
     dr_tcas_pos_y.get_all();
     dr_tcas_pos_z.get_all();
-    
+
+    dr_vertical_speed.get_all();
+ 
     dr_tcas_modeS.get_all();
     
 #ifdef DBG
@@ -132,6 +135,8 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   int ai = dr_tcas_num_acf.get_int();
   bool res = get_tcas_positions();
   char buffer[256];
+
+  //DRefFloatArray dr_V_msc{"sim/cockpit2/tcas/targets/position/V_msc"};
   
   for ( auto i = 1; i < ai; i++ ) { // skip 0, it is user's plane, only when at a distance?
     float lx  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
@@ -165,6 +170,13 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       
       float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
 
+      char v_spd = '-';
+      if ( dr_vertical_speed.get_memory(i) > 0.5 ) {
+	v_spd = '^';
+      } else if ( dr_vertical_speed.get_memory(i) < -0.5 ) {
+	v_spd = 'v';
+      }
+      
       // Show airports as well?
 
       // Read a file:
@@ -179,13 +191,16 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
       if ( dist > 5000.0f ) {
-	sprintf( buffer, "%i/%.1f/%i", i, dist/1000.0f, int(dy) );
+	sprintf( buffer, "%i/%.1f/%i %c", i, dist/1000.0f, int(dy), v_spd );
       } else {
-	sprintf( buffer, "%i/%i/%i", i, int(dist), int(dy) );
+	sprintf( buffer, "%i/%i/%i %c", i, int(dist), int(dy), v_spd );
       }
       int len = strlen(buffer);
-      XPLMDrawTranslucentDarkBox(final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8);
-      XPLMDrawString(colWHT, final_x, final_y, buffer, NULL, xplmFont_Basic);
+
+      float box_y = final_y + 12 + 10; // We put box above
+      float box_x = final_x + 12; // We put box to right
+      XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
+      XPLMDrawString(colWHT, box_x, box_y, buffer, NULL, xplmFont_Basic);
 
       // draw the label higer, and a small green line to the final_x and final_y points?
       
@@ -204,14 +219,17 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       glBegin(GL_LINE_LOOP);
       {
 	// final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
-	glVertex2f(final_x - 5, final_y + 10);
-	glVertex2f(final_x + 6*len + 5, final_y + 10);
-	glVertex2f(final_x + 6*len + 5, final_y - 8);
-	glVertex2f(final_x - 5, final_y -8);
-	//glVertex2f(final_x - half_width, final_y + half_height);
-	//glVertex2f(final_x + half_width, final_y + half_height);
-	//glVertex2f(final_x + half_width, final_y - half_height);
-	//glVertex2f(final_x - half_width, final_y - half_height);
+	glVertex2f(box_x - 5,         box_y + 10);
+	glVertex2f(box_x + 6*len + 5, box_y + 10);
+	glVertex2f(box_x + 6*len + 5, box_y - 8);
+	glVertex2f(box_x - 5,         box_y -8);
+      }
+      glEnd();
+      // line to object from box
+      glBegin(GL_LINE_LOOP);
+      {
+	glVertex2f(box_x-5, box_y-8);
+	glVertex2f(final_x, final_y);
       }
       glEnd();
       
