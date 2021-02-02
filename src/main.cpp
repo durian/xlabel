@@ -62,9 +62,9 @@ DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
 DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 */
 DRefFloatArray dr_rel_dist_ntrs{"sim/cockpit2/tcas/indicators/relative_distance_mtrs"};
-DRefFloarArray dr_ref_alt_mtr{"sim/cockpit2/tcas/indicators/relative_altitude_mtrs"};
-DRefFloarArray dr_vertival_speed{"sim/cockpit2/tcas/targets/position/vertical_speed"};
-DRefFloarArray dr_V_msc{"sim/cockpit2/tcas/targets/position/V_msc"};
+DRefFloatArray dr_ref_alt_mtr{"sim/cockpit2/tcas/indicators/relative_altitude_mtrs"};
+DRefFloatArray dr_vertival_speed{"sim/cockpit2/tcas/targets/position/vertical_speed"};
+DRefFloatArray dr_V_msc{"sim/cockpit2/tcas/targets/position/V_msc"};
 DRefIntArray   dr_tcas_modeS{"sim/cockpit2/tcas/targets/modeS_id"};
 bool get_tcas_positions();
 bool get_tcas_positions() {
@@ -83,18 +83,7 @@ bool get_tcas_positions() {
     dr_tcas_pos_x.get_all();
     dr_tcas_pos_y.get_all();
     dr_tcas_pos_z.get_all();
-
-    dr_tcas_pos_vx.get_all();
-    dr_tcas_pos_vy.get_all();
-    dr_tcas_pos_vz.get_all();
-
-    dr_tcas_pos_lat.get_all();
-    dr_tcas_pos_lon.get_all();
-    dr_tcas_pos_ele.get_all();
-
-    dr_tcas_pos_psi.get_all();
-    dr_tcas_pos_phi.get_all();
-
+    
     dr_tcas_modeS.get_all();
     
 #ifdef DBG

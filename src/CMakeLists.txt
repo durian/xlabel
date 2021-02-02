@@ -149,5 +149,5 @@ elseif (UNIX)
 endif ()
 
 set_target_properties(XLABEL PROPERTIES PREFIX "")
-set_target_properties(XLABEL PROPERTIES OUTPUT_NAME "xproj")
+set_target_properties(XLABEL PROPERTIES OUTPUT_NAME "xlabel")
 set_target_properties(XLABEL PROPERTIES SUFFIX ".xpl")
