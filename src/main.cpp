@@ -166,6 +166,10 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
 
       // Show airports as well?
+
+      // Read a file:
+      //  56.292109, 12.854471, 0, RGB, ESTA 
+
       
       // Not show when less than 1000m? and > 40km?
       //sim/cockpit2/tcas/indicators/relative_distance_mtrs     float[64]       y       meters  Distance to each other
@@ -182,6 +186,35 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       int len = strlen(buffer);
       XPLMDrawTranslucentDarkBox(final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8);
       XPLMDrawString(colWHT, final_x, final_y, buffer, NULL, xplmFont_Basic);
+
+      // draw the label higer, and a small green line to the final_x and final_y points?
+      
+      XPLMSetGraphicsState(
+			   0 /* no fog */,
+			   0 /* 0 texture units */,
+			   0 /* no lighting */,
+			   0 /* no alpha testing */,
+			   1 /* do alpha blend */,
+			   1 /* do depth testing */,
+			   0 /* no depth writing */
+			   );
+      glColor3f(0, 1, 0); // green
+      float half_width  = 10;
+      float half_height = 10;
+      glBegin(GL_LINE_LOOP);
+      {
+	// final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
+	glVertex2f(final_x - 5, final_y + 10);
+	glVertex2f(final_x + 6*len + 5, final_y + 10);
+	glVertex2f(final_x + 6*len + 5, final_y - 8);
+	glVertex2f(final_x - 5, final_y -8);
+	//glVertex2f(final_x - half_width, final_y + half_height);
+	//glVertex2f(final_x + half_width, final_y + half_height);
+	//glVertex2f(final_x + half_width, final_y - half_height);
+	//glVertex2f(final_x - half_width, final_y - half_height);
+      }
+      glEnd();
+      
     }
   }
   
@@ -198,9 +231,9 @@ int toggle_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, vo
 // ----
 
 PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
-  strcpy(outName, "X-PROJECT");
-  strcpy(outSig, "xpsdk.examples.mapplugin");
-  strcpy(outDesc, "A test plug-in.");
+  strcpy(outName, "X-Label");
+  strcpy(outSig, "durian.xlabel");
+  strcpy(outDesc, "Plugin to label AI aircraft.");
 
   dr_tcas_num_acf.init();
   dr_tcas_pos_x.init();
@@ -227,7 +260,6 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   toggle_label_cmd = XPLMCreateCommand("durian/xlabel/toggle_label", "Toggle label");
   XPLMRegisterCommandHandler(toggle_label_cmd, toggle_label_handler, 0, (void *)0);
 
-  
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   
   return 1;
