@@ -85,6 +85,7 @@ bool get_tcas_positions() {
     dr_tcas_pos_y.get_all();
     dr_tcas_pos_z.get_all();
 
+    dr_V_msc.get_all();
     dr_vertical_speed.get_all();
  
     dr_tcas_modeS.get_all();
@@ -176,6 +177,8 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       } else if ( dr_vertical_speed.get_memory(i) < -0.5 ) {
 	v_spd = 'v';
       }
+
+      float v_msc = dr_V_msc.get_memory(i); // 1.943844
       
       // Show airports as well?
 
@@ -191,16 +194,16 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
       if ( dist > 5000.0f ) {
-	sprintf( buffer, "%i/%.1f/%i %c", i, dist/1000.0f, int(dy), v_spd );
+	sprintf( buffer, "%i/%.1f/%i/%i %c", i, dist/1000.0f, int(dy), int(v_msc*1.943844), v_spd );
       } else {
-	sprintf( buffer, "%i/%i/%i %c", i, int(dist), int(dy), v_spd );
+	sprintf( buffer, "%i/%i/%i/%i %c", i, int(dist), int(dy), int(v_msc*1.943844), v_spd );
       }
       int len = strlen(buffer);
 
       float box_y = final_y + 12 + 10; // We put box above
       float box_x = final_x + 12; // We put box to right
       XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
-      XPLMDrawString(colWHT, box_x, box_y, buffer, NULL, xplmFont_Basic);
+      XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
 
       // draw the label higer, and a small green line to the final_x and final_y points?
       
