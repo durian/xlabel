@@ -203,7 +203,7 @@ namespace XLABEL {
       cur_size = std::min( XPLMGetDatavi( dref, nullptr, 0, 0 ), max_size ); 
       int bytes_read = XPLMGetDatavi( dref, memory, 0, cur_size ); 
       // check value?
-#ifdef DBG
+#ifdef DBGOFF
       lg.xplm( path+" read "+std::to_string(bytes_read)+" items\n" );
 #endif
       return bytes_read;

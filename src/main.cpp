@@ -4,6 +4,8 @@
 #include "XPLMGraphics.h"
 #include "XPLMDisplay.h"
 #include "XPLMUtilities.h"
+#include "XPLMNavigation.h"
+#include "XPLMScenery.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -74,9 +76,9 @@ bool get_tcas_positions() {
 #endif
     // Number is in dr_tcas_num_acf
     if ( dr_tcas_num_acf.is_initialised() ) {
-      lg.xplm( "dr_tcas_num_acf says "+std::to_string(dr_tcas_num_acf.get_int())
-	       +" "+std::to_string(dr_tcas_num_acf.init())
-	       +"\n" );
+      //lg.xplm( "dr_tcas_num_acf says "+std::to_string(dr_tcas_num_acf.get_int())
+      //       +" "+std::to_string(dr_tcas_num_acf.init())
+      //       +"\n" );
     } else {
       lg.xplm( "Cannot read dr_tcas_num_acf\n" );
     }
@@ -99,6 +101,9 @@ bool get_tcas_positions() {
 DRefFloat dr_pos_x{"sim/flightmodel/position/local_x"};
 DRefFloat dr_pos_y{"sim/flightmodel/position/local_y"};
 DRefFloat dr_pos_z{"sim/flightmodel/position/local_z"};
+DRefDouble dr_pos_latitude{"sim/flightmodel/position/latitude"};
+DRefDouble dr_pos_longitude{"sim/flightmodel/position/longitude"};
+
 DRefFloatArray dr_matrix_wrl{"sim/graphics/view/world_matrix"};
 DRefFloatArray dr_matrix_proj{"sim/graphics/view/projection_matrix_3d"};
 DRefInt dr_screen_width{"sim/graphics/view/window_width"};
@@ -109,6 +114,49 @@ static void mult_matrix_vec(float dst[4], const float m[16], const float v[4]) {
   dst[2] = v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14];
   dst[3] = v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15];
 }
+
+float  nearest_ap_lat; // nearest airport lat, lon
+float  nearest_ap_lon;
+double nearest_ap_x; // nearest airport opengl
+double nearest_ap_y;
+double nearest_ap_z;
+char id[32];
+char name[256];
+void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
+void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude) {
+  float lat = static_cast<float>(plane_lat);
+  float lon = static_cast<float>(plane_lon);
+  
+  XPLMNavRef closest_ap = XPLMFindNavAid(
+					 NULL, //const char *         inNameFragment,    /* Can be NULL */
+					 NULL, //const char *         inIDFragment,    /* Can be NULL */
+					 (float*)&lat, 
+					 (float*)&lon, //float *              inLon,    /* Can be NULL */
+					 NULL, //int *                inFrequency,    /* Can be NULL */
+					 xplm_Nav_Airport);
+  
+  XPLMGetNavAidInfo(closest_ap, NULL, &latitude, &longitude, NULL, NULL, NULL, id, name, NULL);
+  //lg.xplm( "NEAREST Plane lat, lon: "+std::to_string(lat)+", "+std::to_string(lon)+"\n");
+  //lg.xplm( "NEAREST AP: "+std::string(id)+", "+std::string(name)+", "+
+  //	   std::to_string(latitude)+", "+std::to_string(longitude)+"\n");
+  
+  nearest_ap_lat = latitude;
+  nearest_ap_lon = longitude;
+  
+  XPLMWorldToLocal( nearest_ap_lat, nearest_ap_lon, 0, &nearest_ap_x, &nearest_ap_y, &nearest_ap_z );
+  
+  XPLMProbeRef hProbe;
+  hProbe = XPLMCreateProbe(xplm_ProbeY);
+  XPLMProbeInfo_t info = { 0 };
+  info.structSize = sizeof(info);
+  // If we have a hit then return Y coordinate
+  if ( XPLMProbeTerrainXYZ( hProbe, nearest_ap_x, nearest_ap_y, nearest_ap_z, &info) == xplm_ProbeHitTerrain ) {
+    //lg.xplm( "nearest_ap_y="+std::to_string(nearest_ap_y)+", info.locationY="+std::to_string(info.locationY)+"\n" );
+    nearest_ap_y = info.locationY;
+  }
+}
+
+
 
 static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
   // Read the ACF's OpengL coordinates
@@ -126,6 +174,15 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   float px = dr_pos_x.get_float();
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();
+
+  // Testing testing
+  /*
+  double plat = dr_pos_latitude.get_double();
+  double plon = dr_pos_longitude.get_double();
+  float latitude;
+  float longitude;
+  get_nearest_ap(plat, plon, latitude, longitude);
+  */
   
   float acf_wrl[4] = {	
     px,
@@ -242,6 +299,108 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   return 1;
 }
 
+// Show be deregistered also
+static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
+  // Read the ACF's OpengL coordinates
+
+  if ( ! show_label ) {
+    return 1;
+  }
+  
+  float mv[16], proj[16];
+  // Read the model view and projection matrices from this frame
+  dr_matrix_wrl.get_all_ref( &mv[0], 16 );
+  dr_matrix_proj.get_all_ref( &proj[0], 16 );
+  float acf_eye[4], acf_ndc[4];
+
+  float px = dr_pos_x.get_float();
+  float py = dr_pos_y.get_float();
+  float pz = dr_pos_z.get_float();
+
+  // Testing testing
+  double plat = dr_pos_latitude.get_double();
+  double plon = dr_pos_longitude.get_double();
+  float latitude;
+  float longitude;
+  get_nearest_ap(plat, plon, latitude, longitude);
+  
+  float acf_wrl[4] = {	
+    (float)nearest_ap_x,
+    (float)nearest_ap_y,
+    (float)nearest_ap_z,
+    1.0f };
+
+  char buffer[256];
+
+  // Simulate the OpenGL transformation to get screen coordinates.
+  mult_matrix_vec(acf_eye, mv, acf_wrl);
+  mult_matrix_vec(acf_ndc, proj, acf_eye);
+  
+  if ( acf_ndc[3] >= 0 ) {  // < 0 means behind me
+    acf_ndc[3] = 1.0f / acf_ndc[3];
+    acf_ndc[0] *= acf_ndc[3];
+    acf_ndc[1] *= acf_ndc[3];
+    acf_ndc[2] *= acf_ndc[3];
+    
+    float screen_w = (float)dr_screen_width.get_int();
+    float screen_h = (float)dr_screen_height.get_int();
+    
+    float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
+    float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
+    
+    float dx = nearest_ap_x - px;
+    float dz = nearest_ap_z - pz;
+    float dy = nearest_ap_y - py; 
+    
+    float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
+    
+    float colWHT[] = { 1.0, 1.0, 1.0 };
+    if ( dist > 5000.0f ) {
+      sprintf( buffer, "%s %s", id, name );
+    } else {
+      sprintf( buffer, "%s %s", id, name );
+    }
+    int len = strlen(buffer);
+    
+    float box_y = final_y + 12 + 10; // We put box above
+    float box_x = final_x + 12; // We put box to right
+    XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
+    XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
+    
+    XPLMSetGraphicsState(
+			 0 /* no fog */,
+			 0 /* 0 texture units */,
+			 0 /* no lighting */,
+			 0 /* no alpha testing */,
+			 1 /* do alpha blend */,
+			 1 /* do depth testing */,
+			 0 /* no depth writing */
+			 );
+    glColor3f(0, 1, 0); // green
+    float half_width  = 10;
+    float half_height = 10;
+    glBegin(GL_LINE_LOOP);
+    {
+      // final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
+      glVertex2f(box_x - 5,         box_y + 10);
+      glVertex2f(box_x + 6*len + 5, box_y + 10);
+      glVertex2f(box_x + 6*len + 5, box_y - 8);
+      glVertex2f(box_x - 5,         box_y -8);
+    }
+    glEnd();
+    // line to object from box
+    glBegin(GL_LINE_LOOP);
+    {
+      glVertex2f(box_x-5, box_y-8);
+      glVertex2f(final_x, final_y);
+    }
+    glEnd();
+    
+  }
+  
+  return 1;
+}
+
 int toggle_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     show_label = ( ! show_label );
@@ -282,6 +441,7 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   XPLMRegisterCommandHandler(toggle_label_cmd, toggle_label_handler, 0, (void *)0);
 
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
+  XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);
   
   return 1;
 }
