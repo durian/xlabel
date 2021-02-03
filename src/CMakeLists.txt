@@ -58,13 +58,15 @@ add_compile_options(-fvisibility=hidden)
 # Enable stricter warnings and then disable some we are not interested in.
 #add_compile_options(-Wall -Wpedantic -Wshadow -Wfloat-equal -Wextra)
 add_compile_options(-Wno-unused)
+add_compile_options(-Wno-format-overflow)
 
 # Always use position-independent code and highest optimization level (FPS!).
 add_compile_options(-O3)
 
 # X-Plane plugin
 list(APPEND XLABEL_SRCS
-  main.cpp 
+  main.cpp
+  global.cpp
   Log.cpp
   dr.cpp
   ) 

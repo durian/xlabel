@@ -29,6 +29,7 @@
 // Mine
 #include "dr.h"
 #include "Log.h"
+#include "global.h"
 
 using namespace XLABEL;
 
@@ -44,9 +45,10 @@ static void draw_marking_icons( XPLMMapLayerID layer, const float * inMapBoundsL
 static void draw_marking_labels(XPLMMapLayerID layer, const float * inMapBoundsLeftTopRightBottom, float zoomRatio, float mapUnitsPerUserInterfaceUnit, XPLMMapStyle mapStyle, XPLMMapProjectionID projection, void * inRefcon);
 static void will_be_deleted(    XPLMMapLayerID layer, void * inRefcon);
 
-XPLMCommandRef toggle_label_cmd;
-bool show_label = false;
-int  label_kind = 0;
+// moved
+//XPLMCommandRef toggle_label_cmd;
+//bool show_label = false;
+//int  label_kind = 0;
   
 DRefInt dr_tcas_num_acf{"sim/cockpit2/tcas/indicators/tcas_num_acf"};
 DRefInt dr_override_TCAS{"sim/operation/override/override_TCAS"};
