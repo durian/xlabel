@@ -6,6 +6,7 @@
 #include "XPLMUtilities.h"
 #include "XPLMNavigation.h"
 #include "XPLMScenery.h"
+#include "XPLMPlugin.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -43,9 +44,6 @@ DRefFloatArray dr_tcas_pos_ele{"sim/cockpit2/tcas/targets/position/ele"};
 DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
 DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 */
-
-
-
 
 float  nearest_ap_lat; // nearest airport lat, lon
 float  nearest_ap_lon;
@@ -335,6 +333,16 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   strcpy(outSig, "durian.xlabel");
   strcpy(outDesc, "Plugin to label AI aircraft.");
 
+  XPLMEnableFeature("XPLM_USE_NATIVE_PATHS", 1);  
+  XPLMEnableFeature("XPLM_USE_NATIVE_WIDGET_WINDOWS", 1);
+  
+  char filebase[255];
+  XPLMGetSystemPath(filebase); // Locate the X-System directory
+  const char *sep = XPLMGetDirectorySeparator();
+  //std::string prefsfile = std::string(filebase) + "Resources" + sep + "plugins" + sep+ "xlabel" + sep + "xlbl_config.toml"; 
+  //auto config = toml::parse( prefsfile );
+
+  
   dr_tcas_num_acf.init();
   dr_tcas_pos_x.init();
   dr_tcas_pos_y.init();

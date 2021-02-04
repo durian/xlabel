@@ -25,6 +25,9 @@ fi
 
 make lin
 
+# Should go into Output/preferences/
+cp ../src/xlabel.toml ../bin/xlabel/
+
 # should check if exists here
 if [ -f "../src/build-lin/${PLGBASE}.xpl" ]; then 
     cp ../src/build-lin/${PLGBASE}.xpl ../bin/${PLGBASE}/${DIR}/
@@ -40,3 +43,4 @@ else
     echo "ERROR"
 fi
 echo "${RST}"
+

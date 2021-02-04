@@ -13,7 +13,8 @@ if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif ()
 
-set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_CXX_STANDARD 14)
 
 if(POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
@@ -69,7 +70,6 @@ add_compile_options(-O3)
 # X-Plane plugin
 list(APPEND XLABEL_SRCS
   main.cpp
-  global.h 
   global.cpp
   Log.cpp
   dr.cpp
@@ -77,12 +77,12 @@ list(APPEND XLABEL_SRCS
 
 add_library(XLABEL SHARED ${XLABEL_SRCS})
 
-target_compile_features(XLABEL PUBLIC cxx_std_17) 
+target_compile_features(XLABEL PUBLIC cxx_std_14) 
 
 if (APPLE)
     # X-Plane supports OS X 10.10+, so this should ensure this can run on
     # all supported versions.
-    target_compile_options(XLABEL PUBLIC -mmacosx-version-min=10.10)
+    target_compile_options(XLABEL PUBLIC -mmacosx-version-min=10.10 -std=c++14)
     target_link_libraries(XLABEL -mmacosx-version-min=10.10)
 endif ()
 
@@ -133,7 +133,7 @@ elseif (APPLE)
     # conflict with other plugins, in particular ones with Lua interpreter
     # embedded.
     target_link_libraries(XLABEL "-exported_symbols_list ${CMAKE_SOURCE_DIR}/XLABEL.sym_mac")
-    target_link_libraries(XLABEL "-flat_namespace -undefined suppress")
+    target_link_libraries(XLABEL "-flat_namespace -undefined suppress"   -stdlib=libc++)
 elseif (UNIX)
     # Specify additional runtime search laths for dynamically-linked libraries.
     # Restrict set of symbols exported from the plugin. This reduces changes of

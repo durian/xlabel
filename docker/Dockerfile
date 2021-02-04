@@ -5,12 +5,11 @@ ENV TZ=Europe/Stockholm
 
 RUN sed -i -e 's/http:\/\/archive.ubuntu.com\/ubuntu\//mirror:\/\/mirrors.ubuntu.com\/mirrors.txt/' /etc/apt/sources.list && apt-get clean && apt-get update
 
-
 RUN apt-get install -y ca-certificates tzdata
 
-
 # Install Linux toolchain (GCC).
-RUN DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -y  dialog apt-utils build-essential ninja-build sudo bash coreutils curl \
+#
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get --no-install-recommends install -y  dialog apt-utils build-essential ninja-build sudo bash coreutils curl \
   && apt-get clean \
   && curl -sSL https://cmake.org/files/v3.18/cmake-3.18.0-Linux-x86_64.tar.gz \
      | tar -xz -C /usr/local/ --strip-components=1
@@ -20,7 +19,8 @@ RUN apt-get install -y --no-install-recommends mingw-w64 g++-mingw-w64 && apt-ge
 
 # Install OS X cross-compiling toolchain (clang).
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends clang  && apt-get clean
+# libc++-dev
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends clang   && apt-get clean
 #Build arguments
 ARG osxcross_repo="tpoechtrager/osxcross"
 ARG osxcross_revision="f4ba4facae996b3b14d89eb62c0384564f7368b5"
