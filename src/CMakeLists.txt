@@ -18,7 +18,9 @@ set(CMAKE_CXX_STANDARD 17)
 if(POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
 endif()
-  
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS YES CACHE BOOL "Export all symbols")
+
 # Set include directories used by our code and dependencies.
 include_directories("${CMAKE_SOURCE_DIR}/XPSDK302/CHeaders/Widgets")
 include_directories("${CMAKE_SOURCE_DIR}/XPSDK302/CHeaders/Wrappers")
@@ -27,8 +29,9 @@ include_directories("${CMAKE_SOURCE_DIR}/WinSDK/Include")
 include_directories("${CMAKE_SOURCE_DIR}")
 include_directories("${CMAKE_SOURCE_DIR}/")
 
+
 if (WIN32)
-	include_directories("${CMAKE_SOURCE_DIR}/WinSDK/Include")
+  include_directories("${CMAKE_SOURCE_DIR}/WinSDK/Include")
 endif ()
 
 # Specify library search locations.
@@ -66,6 +69,7 @@ add_compile_options(-O3)
 # X-Plane plugin
 list(APPEND XLABEL_SRCS
   main.cpp
+  global.h 
   global.cpp
   Log.cpp
   dr.cpp

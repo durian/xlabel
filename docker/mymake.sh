@@ -23,7 +23,14 @@ echo -e "\n\n\n"
 DIR="mac_x64/"
 mkdir -p ../bin/${PLGBASE}/$DIR/
 make mac
-cp ../src/build-mac/${PLG} ../bin/${PLGBASE}/${DIR}/${PLG}
+if [ -f "../src/build-mac/${PLG}" ]; then 
+    cp ../src/build-mac/${PLG} ../bin/${PLGBASE}/${DIR}/${PLG}
+else
+    echo "${RED}"
+    echo "ERROR"
+    echo "${RST}"
+    exit 1
+fi
 
 echo -e "\n\n\n"
 echo "${RED}Win ${XPL}${RST}"
@@ -31,7 +38,15 @@ echo -e "\n\n\n"
 DIR="win_x64/"
 mkdir -p ../bin/${PLGBASE}/$DIR/
 make win
-cp ../src/build-win/${PLG} ../bin/${PLGBASE}/${DIR}/${PLG}
+if [ -f "../src/build-win/${PLG}" ]; then
+    cp ../src/build-win/${PLG} ../bin/${PLGBASE}/${DIR}/${PLG}
+else
+    echo "${RED}"
+    echo "ERROR"
+    echo "${RST}"
+    exit 1
+fi
+
 
 echo -e "\n\n\n"
 echo "${RED}Lin ${XPL}${RST}"
@@ -39,7 +54,14 @@ echo -e "\n\n\n"
 DIR="lin_x64/"
 mkdir -p ../bin/${PLGBASE}/$DIR/
 make lin
-cp ../src/build-lin/${PLG} ../bin/${PLGBASE}/${DIR}/${PLG}
+if [ -f "../src/build-lin/${PLG}" ]; then
+    cp ../src/build-lin/${PLG} ../bin/${PLGBASE}/${DIR}/${PLG}
+else
+    echo "${RED}"
+    echo "ERROR"
+    echo "${RST}"
+    exit 1
+fi
 
 #echo cp -r ../bin/64 /Volumes/Luna/X-Plane 11/Resources/plugins/xsmoke/
 echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11/Resources/plugins/${PLGBASE}/$DIR
