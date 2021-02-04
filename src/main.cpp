@@ -33,11 +33,6 @@
 
 using namespace XLABEL;
 
-// moved
-//XPLMCommandRef toggle_label_cmd;
-//bool show_label = false;
-//int  label_kind = 0;
-  
 /*
 DRefFloatArray dr_tcas_pos_vx{"sim/cockpit2/tcas/targets/position/vx"};
 DRefFloatArray dr_tcas_pos_vy{"sim/cockpit2/tcas/targets/position/vy"};
@@ -49,51 +44,8 @@ DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
 DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 */
 
-bool get_tcas_positions();
-bool get_tcas_positions() {
-#ifdef DBG
-    lg.xplm( "get_tcas_positions() START\n" );
-#endif
-    // Number is in dr_tcas_num_acf
-    if ( dr_tcas_num_acf.is_initialised() ) {
-      //lg.xplm( "dr_tcas_num_acf says "+std::to_string(dr_tcas_num_acf.get_int())
-      //       +" "+std::to_string(dr_tcas_num_acf.init())
-      //       +"\n" );
-    } else {
-      lg.xplm( "Cannot read dr_tcas_num_acf\n" );
-    }
-    
-    dr_tcas_pos_x.get_all();
-    dr_tcas_pos_y.get_all();
-    dr_tcas_pos_z.get_all();
 
-    dr_V_msc.get_all();
-    dr_vertical_speed.get_all();
- 
-    dr_tcas_modeS.get_all();
-    
-#ifdef DBG
-    lg.xplm( "get_tcas_positions() END\n" );
-#endif
-    return true;
-}
 
-DRefFloat dr_pos_x{"sim/flightmodel/position/local_x"};
-DRefFloat dr_pos_y{"sim/flightmodel/position/local_y"};
-DRefFloat dr_pos_z{"sim/flightmodel/position/local_z"};
-DRefDouble dr_pos_latitude{"sim/flightmodel/position/latitude"};
-DRefDouble dr_pos_longitude{"sim/flightmodel/position/longitude"};
-
-DRefFloatArray dr_matrix_wrl{"sim/graphics/view/world_matrix"};
-DRefFloatArray dr_matrix_proj{"sim/graphics/view/projection_matrix_3d"};
-DRefInt dr_screen_width{"sim/graphics/view/window_width"};
-DRefInt dr_screen_height{"sim/graphics/view/window_height"};
-static void mult_matrix_vec(float dst[4], const float m[16], const float v[4]) {
-  dst[0] = v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + v[3] * m[12];
-  dst[1] = v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + v[3] * m[13];
-  dst[2] = v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14];
-  dst[3] = v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15];
-}
 
 float  nearest_ap_lat; // nearest airport lat, lon
 float  nearest_ap_lon;
@@ -102,8 +54,10 @@ double nearest_ap_y;
 double nearest_ap_z;
 char id[32];
 char name[256];
+
 void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
 void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude) {
+  // This is slow.
   float lat = static_cast<float>(plane_lat);
   float lon = static_cast<float>(plane_lon);
   
@@ -124,7 +78,8 @@ void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& 
   nearest_ap_lon = longitude;
   
   XPLMWorldToLocal( nearest_ap_lat, nearest_ap_lon, 0, &nearest_ap_x, &nearest_ap_y, &nearest_ap_z );
-  
+
+  // Maybe skip the probe?
   XPLMProbeRef hProbe;
   hProbe = XPLMCreateProbe(xplm_ProbeY);
   XPLMProbeInfo_t info = { 0 };
@@ -136,10 +91,9 @@ void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& 
   }
 }
 
-
+// ----
 
 static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
-  // Read the ACF's OpengL coordinates
 
   if ( ! show_label ) {
     return 1;
@@ -155,15 +109,6 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();
 
-  // Testing testing
-  /*
-  double plat = dr_pos_latitude.get_double();
-  double plon = dr_pos_longitude.get_double();
-  float latitude;
-  float longitude;
-  get_nearest_ap(plat, plon, latitude, longitude);
-  */
-  
   float acf_wrl[4] = {	
     px,
     py,
@@ -174,8 +119,6 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   bool res = get_tcas_positions();
   char buffer[256];
 
-  //DRefFloatArray dr_V_msc{"sim/cockpit2/tcas/targets/position/V_msc"};
-  
   for ( auto i = 1; i < ai; i++ ) { // skip 0, it is user's plane, only when at a distance?
     float lx  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
     float lz  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
@@ -205,7 +148,7 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       float dx = lx - px;
       float dz = lz - pz;
       float dy = ly - py; // positive means I am lower
-      
+
       float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
 
       char v_spd = '-';
@@ -217,11 +160,8 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 
       float v_msc = dr_V_msc.get_memory(i); // 1.943844
       
-      // Show airports as well?
-
       // Read a file:
       //  56.292109, 12.854471, 0, RGB, ESTA 
-
       
       // Not show when less than 1000m? and > 40km?
       //sim/cockpit2/tcas/indicators/relative_distance_mtrs     float[64]       y       meters  Distance to each other
@@ -279,7 +219,7 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   return 1;
 }
 
-// Show be deregistered also
+// Should be deregistered also
 static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
   // Read the ACF's OpengL coordinates
 

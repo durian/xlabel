@@ -1,5 +1,6 @@
 #include "XPLMUtilities.h"
 
+#include "Log.h"
 #include "dr.h"
 #include "global.h"
 
@@ -21,5 +22,51 @@ namespace XLABEL {
   DRefFloatArray dr_vertical_speed{"sim/cockpit2/tcas/targets/position/vertical_speed"};
   DRefFloatArray dr_V_msc{"sim/cockpit2/tcas/targets/position/V_msc"};
   DRefIntArray   dr_tcas_modeS{"sim/cockpit2/tcas/targets/modeS_id"};
+
+  DRefFloat dr_pos_x{"sim/flightmodel/position/local_x"};
+  DRefFloat dr_pos_y{"sim/flightmodel/position/local_y"};
+  DRefFloat dr_pos_z{"sim/flightmodel/position/local_z"};
+  DRefDouble dr_pos_latitude{"sim/flightmodel/position/latitude"};
+  DRefDouble dr_pos_longitude{"sim/flightmodel/position/longitude"};
+  
+  DRefFloatArray dr_matrix_wrl{"sim/graphics/view/world_matrix"};
+  DRefFloatArray dr_matrix_proj{"sim/graphics/view/projection_matrix_3d"};
+  DRefInt dr_screen_width{"sim/graphics/view/window_width"};
+  DRefInt dr_screen_height{"sim/graphics/view/window_height"};
+
+  bool get_tcas_positions() {
+#ifdef DBG
+    lg.xplm( "get_tcas_positions() START\n" );
+#endif
+    // Number is in dr_tcas_num_acf
+    if ( dr_tcas_num_acf.is_initialised() ) {
+      //lg.xplm( "dr_tcas_num_acf says "+std::to_string(dr_tcas_num_acf.get_int())
+      //       +" "+std::to_string(dr_tcas_num_acf.init())
+      //       +"\n" );
+    } else {
+      lg.xplm( "Cannot read dr_tcas_num_acf\n" );
+    }
+    
+    dr_tcas_pos_x.get_all();
+    dr_tcas_pos_y.get_all();
+    dr_tcas_pos_z.get_all();
+
+    dr_V_msc.get_all();
+    dr_vertical_speed.get_all();
+ 
+    dr_tcas_modeS.get_all();
+    
+#ifdef DBG
+    lg.xplm( "get_tcas_positions() END\n" );
+#endif
+    return true;
+  }
+
+  void mult_matrix_vec(float dst[4], const float m[16], const float v[4]) {
+  dst[0] = v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + v[3] * m[12];
+  dst[1] = v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + v[3] * m[13];
+  dst[2] = v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14];
+  dst[3] = v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15];
+}
 
 }
