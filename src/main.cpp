@@ -45,50 +45,6 @@ DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
 DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 */
 
-float  nearest_ap_lat; // nearest airport lat, lon
-float  nearest_ap_lon;
-double nearest_ap_x; // nearest airport opengl
-double nearest_ap_y;
-double nearest_ap_z;
-char id[32];
-char name[256];
-
-void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
-void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude) {
-  // This is slow.
-  float lat = static_cast<float>(plane_lat);
-  float lon = static_cast<float>(plane_lon);
-  
-  XPLMNavRef closest_ap = XPLMFindNavAid(
-					 NULL, //const char *         inNameFragment,    /* Can be NULL */
-					 NULL, //const char *         inIDFragment,    /* Can be NULL */
-					 (float*)&lat, 
-					 (float*)&lon, //float *              inLon,    /* Can be NULL */
-					 NULL, //int *                inFrequency,    /* Can be NULL */
-					 xplm_Nav_Airport);
-  
-  XPLMGetNavAidInfo(closest_ap, NULL, &latitude, &longitude, NULL, NULL, NULL, id, name, NULL);
-  //lg.xplm( "NEAREST Plane lat, lon: "+std::to_string(lat)+", "+std::to_string(lon)+"\n");
-  //lg.xplm( "NEAREST AP: "+std::string(id)+", "+std::string(name)+", "+
-  //	   std::to_string(latitude)+", "+std::to_string(longitude)+"\n");
-  
-  nearest_ap_lat = latitude;
-  nearest_ap_lon = longitude;
-  
-  XPLMWorldToLocal( nearest_ap_lat, nearest_ap_lon, 0, &nearest_ap_x, &nearest_ap_y, &nearest_ap_z );
-
-  // Maybe skip the probe?
-  XPLMProbeRef hProbe;
-  hProbe = XPLMCreateProbe(xplm_ProbeY);
-  XPLMProbeInfo_t info = { 0 };
-  info.structSize = sizeof(info);
-  // If we have a hit then return Y coordinate
-  if ( XPLMProbeTerrainXYZ( hProbe, nearest_ap_x, nearest_ap_y, nearest_ap_z, &info) == xplm_ProbeHitTerrain ) {
-    //lg.xplm( "nearest_ap_y="+std::to_string(nearest_ap_y)+", info.locationY="+std::to_string(info.locationY)+"\n" );
-    nearest_ap_y = info.locationY;
-  }
-}
-
 // ----
 
 static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
@@ -218,9 +174,14 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 }
 
 // Should be deregistered also
+int counter = 0;
+int pois[] = {
+  { 56.292109, 12.854471, "ESTA" },
+  { 56.053821, 13.530892, "RH118" }
+};
 static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
   // Read the ACF's OpengL coordinates
-
+  
   if ( ! show_label ) {
     return 1;
   }
@@ -238,9 +199,14 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   // Testing testing
   double plat = dr_pos_latitude.get_double();
   double plon = dr_pos_longitude.get_double();
+  plat = 44.572486; // Testing LROP airport
+  plon = 26.084742;
   float latitude;
   float longitude;
-  get_nearest_ap(plat, plon, latitude, longitude);
+  if ( --counter <= 0 ) {
+    counter = 30;
+    get_nearest_ap(plat, plon, latitude, longitude);
+  }
   
   float acf_wrl[4] = {	
     (float)nearest_ap_x,
@@ -273,10 +239,11 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
     
     float colWHT[] = { 1.0, 1.0, 1.0 };
-    if ( dist > 5000.0f ) {
-      sprintf( buffer, "%s %s", id, name );
+    if ( dist < 5000.0f ) {
+      sprintf( buffer, "%s %s %.1f m", id, name, dist );
     } else {
-      sprintf( buffer, "%s %s", id, name );
+      dist /= 1000.0f;
+      sprintf( buffer, "%s %s %.1f km", id, name, dist );
     }
     int len = strlen(buffer);
     
@@ -369,13 +336,14 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   XPLMRegisterCommandHandler(toggle_label_cmd, toggle_label_handler, 0, (void *)0);
 
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
-  //XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
+  XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
   
   return 1;
 }
 
 PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
+  XPLMUnregisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);
   XPLMUnregisterCommandHandler(toggle_label_cmd, toggle_label_handler, 0, (void *)0);
 }
 

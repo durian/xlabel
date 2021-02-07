@@ -1,4 +1,7 @@
 #include "XPLMUtilities.h"
+#include "XPLMNavigation.h"
+#include "XPLMScenery.h"
+#include "XPLMGraphics.h"
 
 #include "Log.h"
 #include "dr.h"
@@ -69,4 +72,46 @@ namespace XLABEL {
   dst[3] = v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15];
 }
 
+
+  float  nearest_ap_lat; // nearest airport lat, lon
+  float  nearest_ap_lon;
+  double nearest_ap_x; // nearest airport opengl
+  double nearest_ap_y;
+  double nearest_ap_z;
+  char id[32];
+  char name[256];
+  XPLMProbeRef hProbe = XPLMCreateProbe(xplm_ProbeY);
+  XPLMProbeInfo_t info = { 0 };
+
+  void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude) {
+    // This is slow.
+    float lat = static_cast<float>(plane_lat);
+    float lon = static_cast<float>(plane_lon);
+    
+    XPLMNavRef closest_ap = XPLMFindNavAid(
+					   NULL, //const char *         inNameFragment,    /* Can be NULL */
+					   NULL, //const char *         inIDFragment,    /* Can be NULL */
+					   (float*)&lat, 
+					   (float*)&lon, //float *              inLon,    /* Can be NULL */
+					   NULL, //int *                inFrequency,    /* Can be NULL */
+					   xplm_Nav_Airport);
+    
+    XPLMGetNavAidInfo(closest_ap, NULL, &latitude, &longitude, NULL, NULL, NULL, id, name, NULL);
+    //lg.xplm( "NEAREST Plane lat, lon: "+std::to_string(lat)+", "+std::to_string(lon)+"\n");
+    //lg.xplm( "NEAREST AP: "+std::string(id)+", "+std::string(name)+", "+
+    //	   std::to_string(latitude)+", "+std::to_string(longitude)+"\n");
+    
+    nearest_ap_lat = latitude;
+    nearest_ap_lon = longitude;
+    
+    XPLMWorldToLocal( nearest_ap_lat, nearest_ap_lon, 0, &nearest_ap_x, &nearest_ap_y, &nearest_ap_z );
+    
+    info.structSize = sizeof(info);
+    // If we have a hit then return Y coordinate
+    if ( XPLMProbeTerrainXYZ( hProbe, nearest_ap_x, nearest_ap_y, nearest_ap_z, &info) == xplm_ProbeHitTerrain ) {
+      //lg.xplm( "nearest_ap_y="+std::to_string(nearest_ap_y)+", info.locationY="+std::to_string(info.locationY)+"\n" );
+      nearest_ap_y = info.locationY;
+    }
+  }
+  
 }

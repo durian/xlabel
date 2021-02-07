@@ -37,5 +37,17 @@ namespace XLABEL {
 
   bool get_tcas_positions();
   void mult_matrix_vec(float dst[4], const float m[16], const float v[4]);
+
+  extern float  nearest_ap_lat; // nearest airport lat, lon
+  extern float  nearest_ap_lon;
+  extern double nearest_ap_x; // nearest airport opengl
+  extern double nearest_ap_y;
+  extern double nearest_ap_z;
+  extern char id[32];
+  extern char name[256];
+  extern XPLMProbeRef hProbe;
+  extern XPLMProbeInfo_t info;
+
+  void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
 }
 #endif
