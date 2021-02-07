@@ -105,69 +105,72 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 
       float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
 
-      char v_spd = '-';
-      if ( dr_vertical_speed.get_memory(i) > 0.5 ) {
-	v_spd = '^';
-      } else if ( dr_vertical_speed.get_memory(i) < -0.5 ) {
-	v_spd = 'v';
-      }
+      if ( dist < 200 * 1000 ) { // only < 200 kms
 
-      float v_msc = dr_V_msc.get_memory(i); // 1.943844
-      
-      // Read a file:
-      //  56.292109, 12.854471, 0, RGB, ESTA 
-      
-      // Not show when less than 1000m? and > 40km?
-      //sim/cockpit2/tcas/indicators/relative_distance_mtrs     float[64]       y       meters  Distance to each other
-      //sim/cockpit2/tcas/indicators/relative_altitude_mtrs     float[64]       y       meters  Relative altitude
-      //sim/cockpit2/tcas/targets/position/vertical_speed       float[64]       y       feet/min
-      //sim/cockpit2/tcas/targets/position/V_msc                float[64]       n       meter/s total true speed
-      
-      float colWHT[] = { 1.0, 1.0, 1.0 };
-      if ( dist > 5000.0f ) {
-	sprintf( buffer, "%i/%.1f/%i/%i %c", i, dist/1000.0f, int(dy), int(v_msc*1.943844), v_spd );
-      } else {
-	sprintf( buffer, "%i/%i/%i/%i %c", i, int(dist), int(dy), int(v_msc*1.943844), v_spd );
-      }
-      int len = strlen(buffer);
-
-      float box_y = final_y + 12 + 10; // We put box above
-      float box_x = final_x + 12; // We put box to right
-      XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
-      XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
-
-      // draw the label higer, and a small green line to the final_x and final_y points?
-      
-      XPLMSetGraphicsState(
-			   0 /* no fog */,
-			   0 /* 0 texture units */,
-			   0 /* no lighting */,
-			   0 /* no alpha testing */,
-			   1 /* do alpha blend */,
-			   1 /* do depth testing */,
-			   0 /* no depth writing */
-			   );
-      glColor3f(0, 1, 0); // green
-      float half_width  = 10;
-      float half_height = 10;
-      glBegin(GL_LINE_LOOP);
-      {
-	// final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
-	glVertex2f(box_x - 5,         box_y + 10);
-	glVertex2f(box_x + 6*len + 5, box_y + 10);
-	glVertex2f(box_x + 6*len + 5, box_y - 8);
-	glVertex2f(box_x - 5,         box_y -8);
-      }
-      glEnd();
-      // line to object from box
-      glBegin(GL_LINE_LOOP);
-      {
-	glVertex2f(box_x-5, box_y-8);
-	glVertex2f(final_x, final_y);
-      }
-      glEnd();
-      
-    }
+	char v_spd = '-';
+	if ( dr_vertical_speed.get_memory(i) > 0.5 ) {
+	  v_spd = '^';
+	} else if ( dr_vertical_speed.get_memory(i) < -0.5 ) {
+	  v_spd = 'v';
+	}
+	
+	float v_msc = dr_V_msc.get_memory(i); // 1.943844
+	
+	// Read a file:
+	//  56.292109, 12.854471, 0, RGB, ESTA 
+	
+	// Not show when less than 1000m? and > 40km?
+	//sim/cockpit2/tcas/indicators/relative_distance_mtrs     float[64]       y       meters  Distance to each other
+	//sim/cockpit2/tcas/indicators/relative_altitude_mtrs     float[64]       y       meters  Relative altitude
+	//sim/cockpit2/tcas/targets/position/vertical_speed       float[64]       y       feet/min
+	//sim/cockpit2/tcas/targets/position/V_msc                float[64]       n       meter/s total true speed
+	
+	float colWHT[] = { 1.0, 1.0, 1.0 };
+	if ( dist > 5000.0f ) {
+	  sprintf( buffer, "%i/%.1f/%i/%i %c", i, dist/1000.0f, int(dy), int(v_msc*1.943844), v_spd );
+	} else {
+	  sprintf( buffer, "%i/%i/%i/%i %c", i, int(dist), int(dy), int(v_msc*1.943844), v_spd );
+	}
+	int len = strlen(buffer);
+	
+	float box_y = final_y + 12 + 10; // We put box above
+	float box_x = final_x + 12; // We put box to right
+	XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
+	XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
+	
+	// draw the label higer, and a small green line to the final_x and final_y points?
+	
+	XPLMSetGraphicsState(
+			     0 /* no fog */,
+			     0 /* 0 texture units */,
+			     0 /* no lighting */,
+			     0 /* no alpha testing */,
+			     1 /* do alpha blend */,
+			     1 /* do depth testing */,
+			     0 /* no depth writing */
+			     );
+	glColor3f(0, 1, 0); // green
+	float half_width  = 10;
+	float half_height = 10;
+	glBegin(GL_LINE_LOOP);
+	{
+	  // final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
+	  glVertex2f(box_x - 5,         box_y + 10);
+	  glVertex2f(box_x + 6*len + 5, box_y + 10);
+	  glVertex2f(box_x + 6*len + 5, box_y - 8);
+	  glVertex2f(box_x - 5,         box_y -8);
+	}
+	glEnd();
+	// line to object from box
+	glBegin(GL_LINE_LOOP);
+	{
+	  glVertex2f(box_x-5, box_y-8);
+	  glVertex2f(final_x, final_y);
+	}
+	glEnd();
+	
+      } // dist
+    } 
   }
   
   return 1;
@@ -186,8 +189,10 @@ struct poi {
   double counter;
 };
 poi pois[] = {
-  poi{ 56.292109, 12.854471, "ESTA" },
-  poi{ 56.053821, 13.530892, "RH118" }
+  poi{ 56.292109, 12.854471, "ESTA",  0, 0, 0, 0 },
+  poi{ 56.053821, 13.530892, "RH118", 0, 0, 0, 0 },
+  poi{ 56.338259, 12.895436, "KV8",   0, 0, 0, 0 },
+  poi{ 56.069841, 13.402676, "HRD",   0, 0, 0, 0 }, 
 };
   
 static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
