@@ -113,5 +113,17 @@ namespace XLABEL {
       nearest_ap_y = info.locationY;
     }
   }
-  
+
+  void poi_to_local(double lat, double lon, double& x, double& y, double& z) {
+
+    XPLMWorldToLocal( lat, lon, 0, &x, &y, &z );
+    
+    info.structSize = sizeof(info);
+    // If we have a hit then return Y coordinate
+    if ( XPLMProbeTerrainXYZ( hProbe, x, y, z, &info) == xplm_ProbeHitTerrain ) {
+      //lg.xplm( "nearest_ap_y="+std::to_string(nearest_ap_y)+", info.locationY="+std::to_string(info.locationY)+"\n" );
+      y = info.locationY;
+    }
+  }
+
 }

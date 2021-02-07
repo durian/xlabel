@@ -49,5 +49,6 @@ namespace XLABEL {
   extern XPLMProbeInfo_t info;
 
   void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
+  void poi_to_local(double lat, double lon, double& x, double& y, double& z);
 }
 #endif

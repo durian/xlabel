@@ -175,10 +175,21 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 
 // Should be deregistered also
 int counter = 0;
-int pois[] = {
-  { 56.292109, 12.854471, "ESTA" },
-  { 56.053821, 13.530892, "RH118" }
+
+struct poi {
+  float lat;
+  float lon;
+  std::string name;
+  double x;
+  double y;
+  double z;
+  double counter;
 };
+poi pois[] = {
+  poi{ 56.292109, 12.854471, "ESTA" },
+  poi{ 56.053821, 13.530892, "RH118" }
+};
+  
 static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
   // Read the ACF's OpengL coordinates
   
@@ -196,91 +207,93 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();
 
+  double poi_x;
+  double poi_y;
+  double poi_z;
+  
   // Testing testing
-  double plat = dr_pos_latitude.get_double();
-  double plon = dr_pos_longitude.get_double();
-  plat = 44.572486; // Testing LROP airport
-  plon = 26.084742;
-  float latitude;
-  float longitude;
-  if ( --counter <= 0 ) {
-    counter = 30;
-    get_nearest_ap(plat, plon, latitude, longitude);
-  }
-  
-  float acf_wrl[4] = {	
-    (float)nearest_ap_x,
-    (float)nearest_ap_y,
-    (float)nearest_ap_z,
-    1.0f };
-
-  char buffer[256];
-
-  // Simulate the OpenGL transformation to get screen coordinates.
-  mult_matrix_vec(acf_eye, mv, acf_wrl);
-  mult_matrix_vec(acf_ndc, proj, acf_eye);
-  
-  if ( acf_ndc[3] >= 0 ) {  // < 0 means behind me
-    acf_ndc[3] = 1.0f / acf_ndc[3];
-    acf_ndc[0] *= acf_ndc[3];
-    acf_ndc[1] *= acf_ndc[3];
-    acf_ndc[2] *= acf_ndc[3];
+  for ( const auto& poi : pois) {
     
-    float screen_w = (float)dr_screen_width.get_int();
-    float screen_h = (float)dr_screen_height.get_int();
+    double plat = poi.lat; //dr_pos_latitude.get_double();
+    double plon = poi.lon; //dr_pos_longitude.get_double();
+    float latitude;
+    float longitude;
+    poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
     
-    float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
-    float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
+    float acf_wrl[4] = {	
+      (float)poi_x,
+      (float)poi_y,
+      (float)poi_z,
+      1.0f };
     
-    float dx = nearest_ap_x - px;
-    float dz = nearest_ap_z - pz;
-    float dy = nearest_ap_y - py; 
+    char buffer[256];
     
-    float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
+    // Simulate the OpenGL transformation to get screen coordinates.
+    mult_matrix_vec(acf_eye, mv, acf_wrl);
+    mult_matrix_vec(acf_ndc, proj, acf_eye);
     
-    float colWHT[] = { 1.0, 1.0, 1.0 };
-    if ( dist < 5000.0f ) {
-      sprintf( buffer, "%s %s %.1f m", id, name, dist );
-    } else {
-      dist /= 1000.0f;
-      sprintf( buffer, "%s %s %.1f km", id, name, dist );
+    if ( acf_ndc[3] >= 0 ) {  // < 0 means behind me
+      acf_ndc[3] = 1.0f / acf_ndc[3];
+      acf_ndc[0] *= acf_ndc[3];
+      acf_ndc[1] *= acf_ndc[3];
+      acf_ndc[2] *= acf_ndc[3];
+      
+      float screen_w = (float)dr_screen_width.get_int();
+      float screen_h = (float)dr_screen_height.get_int();
+      
+      float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
+      float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
+      
+      float dx = poi_x - px;
+      float dz = poi_z - pz;
+      float dy = poi_y - py; 
+      
+      float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
+      
+      float colWHT[] = { 1.0, 1.0, 1.0 };
+      if ( dist < 5000.0f ) {
+	sprintf( buffer, "%s %s %.1f m", id, poi.name.c_str(), dist );
+      } else {
+	dist /= 1000.0f;
+	sprintf( buffer, "%s %s %.1f km", id, poi.name.c_str(), dist );
+      }
+      int len = strlen(buffer);
+      
+      float box_y = final_y + 12 + 10; // We put box above
+      float box_x = final_x + 12; // We put box to right
+      XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
+      XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
+      
+      XPLMSetGraphicsState(
+			   0 /* no fog */,
+			   0 /* 0 texture units */,
+			   0 /* no lighting */,
+			   0 /* no alpha testing */,
+			   1 /* do alpha blend */,
+			   1 /* do depth testing */,
+			   0 /* no depth writing */
+			   );
+      glColor3f(0, 1, 0); // green
+      float half_width  = 10;
+      float half_height = 10;
+      glBegin(GL_LINE_LOOP);
+      {
+	// final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
+	glVertex2f(box_x - 5,         box_y + 10);
+	glVertex2f(box_x + 6*len + 5, box_y + 10);
+	glVertex2f(box_x + 6*len + 5, box_y - 8);
+	glVertex2f(box_x - 5,         box_y -8);
+      }
+      glEnd();
+      // line to object from box
+      glBegin(GL_LINE_LOOP);
+      {
+	glVertex2f(box_x-5, box_y-8);
+	glVertex2f(final_x, final_y);
+      }
+      glEnd();
+      
     }
-    int len = strlen(buffer);
-    
-    float box_y = final_y + 12 + 10; // We put box above
-    float box_x = final_x + 12; // We put box to right
-    XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
-    XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
-    
-    XPLMSetGraphicsState(
-			 0 /* no fog */,
-			 0 /* 0 texture units */,
-			 0 /* no lighting */,
-			 0 /* no alpha testing */,
-			 1 /* do alpha blend */,
-			 1 /* do depth testing */,
-			 0 /* no depth writing */
-			 );
-    glColor3f(0, 1, 0); // green
-    float half_width  = 10;
-    float half_height = 10;
-    glBegin(GL_LINE_LOOP);
-    {
-      // final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
-      glVertex2f(box_x - 5,         box_y + 10);
-      glVertex2f(box_x + 6*len + 5, box_y + 10);
-      glVertex2f(box_x + 6*len + 5, box_y - 8);
-      glVertex2f(box_x - 5,         box_y -8);
-    }
-    glEnd();
-    // line to object from box
-    glBegin(GL_LINE_LOOP);
-    {
-      glVertex2f(box_x-5, box_y-8);
-      glVertex2f(final_x, final_y);
-    }
-    glEnd();
-    
   }
   
   return 1;
