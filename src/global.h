@@ -3,6 +3,9 @@
 
 #include "XPLMUtilities.h"
 
+#include <vector>
+#include <string>
+
 #include "dr.h"
 
 // using namespace XLABEL;
@@ -50,5 +53,19 @@ namespace XLABEL {
 
   void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
   void poi_to_local(double lat, double lon, double& x, double& y, double& z);
+  size_t listify(const std::string& s, std::vector<std::string>& v);
+  struct poi { 
+    float lat;
+    float lon;
+    float alt;
+    int   dst; // have to be closer than n meter distance
+    std::string name;
+    double x;
+    double y;
+    double z;
+    double counter;
+  };
+  bool read_pois( const std::string& filename, std::vector<poi>& pois );
+    
 }
 #endif

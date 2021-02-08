@@ -3,6 +3,20 @@
 #include "XPLMScenery.h"
 #include "XPLMGraphics.h"
 
+#include <vector>
+#include <string>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <fstream>
+#include <string>
+#include <ctime>
+#include <algorithm> 
+#include <functional> 
+#include <cctype>
+#include <locale>
+#include <random>
+
 #include "Log.h"
 #include "dr.h"
 #include "global.h"
@@ -115,7 +129,6 @@ namespace XLABEL {
   }
 
   void poi_to_local(double lat, double lon, double& x, double& y, double& z) {
-
     XPLMWorldToLocal( lat, lon, 0, &x, &y, &z );
     
     info.structSize = sizeof(info);
@@ -124,6 +137,75 @@ namespace XLABEL {
       //lg.xplm( "nearest_ap_y="+std::to_string(nearest_ap_y)+", info.locationY="+std::to_string(info.locationY)+"\n" );
       y = info.locationY;
     }
+  }
+  
+  // trim from start
+  std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+  }
+  
+  // trim from end
+  std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+  }
+  
+  // trim from both ends
+  std::string &trim(std::string &s) {
+    return ltrim(rtrim(s));
+  }
+  
+  size_t listify(const std::string& s, std::vector<std::string>& v) {
+    char delim = ',';
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+      trim(item);
+      v.push_back(item);
+    }
+    return v.size();
+  }
+
+  bool read_pois( const std::string& filename, std::vector<poi>& pois ) {
+
+    std::ifstream file( filename.c_str() );
+    if ( ! file ) {
+      lg.xplm( "WARNING: can't read pois file.\n" );
+      return false;
+    }
+
+    std::string a_line;
+    char buffer[255];
+    int poi_counter = 0;
+    while( std::getline( file, a_line )) {
+      if ( a_line.length() == 0 ) {
+	continue;
+      }
+      if ( a_line.at(0) == '#' ) {
+	continue;
+      }
+      std::vector<std::string> bits;
+      listify( a_line, bits );
+      // 56.5, 12.3, 0, ESTA
+      if ( bits.size() == 5 ) {
+	try {
+	  float lat = std::stof(bits[0]);
+	  float lon = std::stof(bits[1]);
+	  float alt = std::stof(bits[2]);
+	  int   dst = int(std::stoi(bits[3]));
+	  std::string lbl = bits[4];
+	  pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 0 } );
+	  ++poi_counter;
+	  sprintf( buffer, "Added POI %i: %.4f, %.4f, %.4f, %i, %s\n", poi_counter, lat, lon, alt, dst, lbl.c_str() );
+	  lg.xplm( buffer );
+	} catch (...) {
+	  lg.xplm( "Error in POI file.\n" );
+	}
+      }
+    } // while
+	
+    return true;      
   }
 
 }

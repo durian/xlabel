@@ -45,6 +45,8 @@ DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
 DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 */
 
+std::vector<poi> pois;
+
 // ----
 
 static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
@@ -179,22 +181,14 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 // Should be deregistered also
 int counter = 0;
 
-struct poi {
-  float lat;
-  float lon;
-  std::string name;
-  double x;
-  double y;
-  double z;
-  double counter;
-};
+/*
 poi pois[] = {
-  poi{ 56.292109, 12.854471, "ESTA",  0, 0, 0, 0 },
-  poi{ 56.053821, 13.530892, "RH118", 0, 0, 0, 0 },
-  poi{ 56.338259, 12.895436, "KV8",   0, 0, 0, 0 },
-  poi{ 56.069841, 13.402676, "HRD",   0, 0, 0, 0 }, 
+  poi{ 56.292109, 12.854471, 0, 1000, "ESTA",  0, 0, 0, 0 },
+  poi{ 56.053821, 13.530892, 0, 1000, "RH118", 0, 0, 0, 0 },
+  poi{ 56.338259, 12.895436, 0, 1000, "KV8",   0, 0, 0, 0 },
+  poi{ 56.069841, 13.402676, 0, 1000, "HRD",   0, 0, 0, 0 }, 
 };
-  
+*/
 static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
   // Read the ACF's OpengL coordinates
   
@@ -223,7 +217,19 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     double plon = poi.lon; //dr_pos_longitude.get_double();
     float latitude;
     float longitude;
+    float alt = poi.alt;
+    int max_dist = poi.dst;
     poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
+    poi_y += alt;
+    
+    float dx = poi_x - px;
+    float dz = poi_z - pz;
+    float dy = poi_y - py; 
+    float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
+
+    if ( dist >= max_dist ) {
+      continue; // skip if too far away
+    }
     
     float acf_wrl[4] = {	
       (float)poi_x,
@@ -249,11 +255,8 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
       
-      float dx = poi_x - px;
-      float dz = poi_z - pz;
-      float dy = poi_y - py; 
       
-      float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
+
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
       if ( dist < 5000.0f ) {
@@ -322,11 +325,16 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   XPLMEnableFeature("XPLM_USE_NATIVE_WIDGET_WINDOWS", 1);
   
   char filebase[255];
-  XPLMGetSystemPath(filebase); // Locate the X-System directory
+  //XPLMGetSystemPath(filebase); // Locate the X-System directory
+  XPLMGetPrefsPath(filebase); // Locate the X-System Output directory
+  XPLMExtractFileAndPath(filebase);
   const char *sep = XPLMGetDirectorySeparator();
-  //std::string prefsfile = std::string(filebase) + "Resources" + sep + "plugins" + sep+ "xlabel" + sep + "xlbl_config.toml"; 
-  //auto config = toml::parse( prefsfile );
+  std::string prefsfile = std::string(filebase) + sep + "xlabel_pois.txt";
+  lg.xplm( prefsfile + "\n" );
+  (void)read_pois( prefsfile, pois );
+  
 
+  
   
   dr_tcas_num_acf.init();
   dr_tcas_pos_x.init();
