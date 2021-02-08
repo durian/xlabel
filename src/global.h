@@ -63,7 +63,7 @@ namespace XLABEL {
     double x;
     double y;
     double z;
-    double counter;
+    int    update;
   };
   bool read_pois( const std::string& filename, std::vector<poi>& pois );
     

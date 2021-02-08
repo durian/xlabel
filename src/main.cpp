@@ -211,7 +211,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   double poi_z;
   
   // Testing testing
-  for ( const auto& poi : pois) {
+  for ( auto& poi : pois) {
     
     double plat = poi.lat; //dr_pos_latitude.get_double();
     double plon = poi.lon; //dr_pos_longitude.get_double();
@@ -219,8 +219,19 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float longitude;
     float alt = poi.alt;
     int max_dist = poi.dst;
-    poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
-    poi_y += alt;
+    if ( poi.update == 1 ) { // should be made 0 on scenery reload FIXME
+      poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
+      poi.x = poi_x;
+      poi.y = poi_y;
+      poi_y += alt;
+      poi.z = poi_z;
+      poi.update = 0;
+      lg.xplm( "Init POI\n" );
+    } else {
+      poi_x = poi.x;
+      poi_y = poi.y;
+      poi_z = poi.z;
+    }
     
     float dx = poi_x - px;
     float dz = poi_z - pz;
@@ -255,9 +266,6 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
       
-      
-
-      
       float colWHT[] = { 1.0, 1.0, 1.0 };
       if ( dist < 5000.0f ) {
 	sprintf( buffer, "%s %s %.1f m", id, poi.name.c_str(), dist );
@@ -271,35 +279,37 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       float box_x = final_x + 12; // We put box to right
       XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
       XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
-      
-      XPLMSetGraphicsState(
-			   0 /* no fog */,
-			   0 /* 0 texture units */,
-			   0 /* no lighting */,
-			   0 /* no alpha testing */,
-			   1 /* do alpha blend */,
-			   1 /* do depth testing */,
-			   0 /* no depth writing */
-			   );
-      glColor3f(0, 1, 0); // green
-      float half_width  = 10;
-      float half_height = 10;
-      glBegin(GL_LINE_LOOP);
-      {
-	// final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
-	glVertex2f(box_x - 5,         box_y + 10);
-	glVertex2f(box_x + 6*len + 5, box_y + 10);
-	glVertex2f(box_x + 6*len + 5, box_y - 8);
-	glVertex2f(box_x - 5,         box_y -8);
+
+      if ( true ) {
+	XPLMSetGraphicsState(
+			     0 /* no fog */,
+			     0 /* 0 texture units */,
+			     0 /* no lighting */,
+			     0 /* no alpha testing */,
+			     1 /* do alpha blend */,
+			     1 /* do depth testing */,
+			     0 /* no depth writing */
+			     );
+	glColor3f(0, 1, 0); // green
+	float half_width  = 10;
+	float half_height = 10;
+	glBegin(GL_LINE_LOOP);
+	{
+	  // final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
+	  glVertex2f(box_x - 5,         box_y + 10);
+	  glVertex2f(box_x + 6*len + 5, box_y + 10);
+	  glVertex2f(box_x + 6*len + 5, box_y - 8);
+	  glVertex2f(box_x - 5,         box_y -8);
+	}
+	glEnd();
+	// line to object from box
+	glBegin(GL_LINE_LOOP);
+	{
+	  glVertex2f(box_x-5, box_y-8);
+	  glVertex2f(final_x, final_y);
+	}
+	glEnd();
       }
-      glEnd();
-      // line to object from box
-      glBegin(GL_LINE_LOOP);
-      {
-	glVertex2f(box_x-5, box_y-8);
-	glVertex2f(final_x, final_y);
-      }
-      glEnd();
       
     }
   }
@@ -332,9 +342,6 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   std::string prefsfile = std::string(filebase) + sep + "xlabel_pois.txt";
   lg.xplm( prefsfile + "\n" );
   (void)read_pois( prefsfile, pois );
-  
-
-  
   
   dr_tcas_num_acf.init();
   dr_tcas_pos_x.init();
@@ -391,6 +398,13 @@ PLUGIN_API void XPluginDisable(void) {
 }
 
 PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void * inParam) {
+  if ( inMsg == XPLM_MSG_SCENERY_LOADED ) {
+    lg.xplm( "Scenery reload\n" );
+    for ( auto& poi : pois) {
+      poi.update = 1;
+    }
+    lg.xplm( "Scenery reloaded\n" );
+  }
 }
 
 

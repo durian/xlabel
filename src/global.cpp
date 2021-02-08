@@ -195,7 +195,7 @@ namespace XLABEL {
 	  float alt = std::stof(bits[2]);
 	  int   dst = int(std::stoi(bits[3]));
 	  std::string lbl = bits[4];
-	  pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 0 } );
+	  pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1 } );
 	  ++poi_counter;
 	  sprintf( buffer, "Added POI %i: %.4f, %.4f, %.4f, %i, %s\n", poi_counter, lat, lon, alt, dst, lbl.c_str() );
 	  lg.xplm( buffer );
