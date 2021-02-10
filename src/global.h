@@ -11,9 +11,13 @@
 // using namespace XLABEL;
 namespace XLABEL {
 
-  extern XPLMCommandRef toggle_label_cmd;
-  extern bool show_label;
+  extern XPLMCommandRef toggle_ac_label_cmd;
+  extern XPLMCommandRef toggle_ap_label_cmd;
+  extern XPLMCommandRef toggle_units_cmd;
+  extern bool show_ac_label;
+  extern bool show_ap_label;
   extern int  label_kind;
+  extern int  units;
   
   extern DRefInt dr_tcas_num_acf;
   extern DRefInt dr_override_TCAS;
@@ -21,6 +25,7 @@ namespace XLABEL {
   extern DRefFloatArray dr_tcas_pos_x;
   extern DRefFloatArray dr_tcas_pos_y;
   extern DRefFloatArray dr_tcas_pos_z;
+  extern DRefFloatArray dr_tcas_pos_ele;
   extern DRefFloatArray dr_rel_dist_mtrs;
   extern DRefFloatArray dr_ref_alt_mtrs;
   extern DRefFloatArray dr_vertical_speed;
@@ -65,7 +70,11 @@ namespace XLABEL {
     double z;
     int    update;
   };
+  float dist_between(const poi& lhs, const poi& rhs);
   bool read_pois( const std::string& filename, std::vector<poi>& pois );
-    
+
+  void make_dist_str( float dist_m, char* buffer, int units );
+  void make_spd_str( float v_msc, char* buffer, int units );
+  void make_alt_str( float alt_m, char* buffer, int units );
 }
 #endif

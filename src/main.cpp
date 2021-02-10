@@ -26,6 +26,7 @@
 #endif
 
 #include <math.h>
+#include <algorithm>
 
 // Mine
 #include "dr.h"
@@ -47,11 +48,13 @@ DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 
 std::vector<poi> pois;
 
+// just make a function, get_dist_str(..), get-alt_str(...)
+
 // ----
 
 static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
 
-  if ( ! show_label ) {
+  if ( ! show_ac_label ) {
     return 1;
   }
   
@@ -74,12 +77,16 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   int ai = dr_tcas_num_acf.get_int();
   bool res = get_tcas_positions();
   char buffer[256];
-
+  char dist_buf[32];
+  char alt_buf[32];
+  char spd_buf[32];
+  
   for ( auto i = 1; i < ai; i++ ) { // skip 0, it is user's plane, only when at a distance?
     float lx  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
     float lz  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
     float ly  = static_cast<float>(dr_tcas_pos_y.get_memory(i));
-
+    float ele = static_cast<float>(dr_tcas_pos_ele.get_memory(i));
+    
     acf_wrl[0] = lx;
     acf_wrl[1] = ly;
     acf_wrl[2] = lz;
@@ -118,21 +125,18 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 	
 	float v_msc = dr_V_msc.get_memory(i); // 1.943844
 	
-	// Read a file:
-	//  56.292109, 12.854471, 0, RGB, ESTA 
-	
-	// Not show when less than 1000m? and > 40km?
 	//sim/cockpit2/tcas/indicators/relative_distance_mtrs     float[64]       y       meters  Distance to each other
 	//sim/cockpit2/tcas/indicators/relative_altitude_mtrs     float[64]       y       meters  Relative altitude
 	//sim/cockpit2/tcas/targets/position/vertical_speed       float[64]       y       feet/min
 	//sim/cockpit2/tcas/targets/position/V_msc                float[64]       n       meter/s total true speed
+	//sim/cockpit2/tcas/targets/position/ele                  float[64]	n	  meter	global coordinate
 	
 	float colWHT[] = { 1.0, 1.0, 1.0 };
-	if ( dist > 5000.0f ) {
-	  sprintf( buffer, "%i/%.1f/%i/%i %c", i, dist/1000.0f, int(dy), int(v_msc*1.943844), v_spd );
-	} else {
-	  sprintf( buffer, "%i/%i/%i/%i %c", i, int(dist), int(dy), int(v_msc*1.943844), v_spd );
-	}
+	make_dist_str( dist, dist_buf, units );
+	make_spd_str( v_msc, spd_buf, units );
+	make_alt_str( ele, alt_buf, units );
+	sprintf( buffer, "%i | %s | %s | %s | %c", i, dist_buf, spd_buf, alt_buf, v_spd );
+	//lg.xplm( std::string(buffer)+"\n" );
 	int len = strlen(buffer);
 	
 	float box_y = final_y + 12 + 10; // We put box above
@@ -189,10 +193,14 @@ poi pois[] = {
   poi{ 56.069841, 13.402676, 0, 1000, "HRD",   0, 0, 0, 0 }, 
 };
 */
+
 static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
   // Read the ACF's OpengL coordinates
   
-  if ( ! show_label ) {
+  if ( ! show_ap_label ) {
+    return 1;
+  }
+  if ( pois.size() == 0 ) {
     return 1;
   }
   
@@ -209,8 +217,23 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   double poi_x;
   double poi_y;
   double poi_z;
+
+  char dist_buf[32];
+  char alt_buf[32];
+  char spd_buf[32];
+
+  // we don't need to sort every frame, once a second is enough...
   
-  // Testing testing
+  poi p{0, 0, 0, 0, "", px, py, pz }; // hmmm
+  std::sort( begin(pois),
+	     end(pois),
+	     [p](const poi& lhs, const poi& rhs) { return dist_between(p, lhs) < dist_between(p, rhs); }
+	     );
+  //poi p0 = pois[0]; // ptr instead
+  //float p0dist = dist_between(p, p0);
+  //lg.xplm( "Closest to: "+p0.name+", "+std::to_string(p0dist)+"\n" );
+    
+  // When sorted, we can stop after first one which is too far away.
   for ( auto& poi : pois) {
     
     double plat = poi.lat; //dr_pos_latitude.get_double();
@@ -219,14 +242,14 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float longitude;
     float alt = poi.alt;
     int max_dist = poi.dst;
-    if ( poi.update == 1 ) { // should be made 0 on scenery reload FIXME
+    if ( poi.update == 1 ) { // Made 1 on scenery reload to trigger recalculation.
       poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
       poi.x = poi_x;
       poi.y = poi_y;
       poi_y += alt;
       poi.z = poi_z;
       poi.update = 0;
-      lg.xplm( "Init POI\n" );
+      lg.xplm( "Init POI "+poi.name+"\n" );
     } else {
       poi_x = poi.x;
       poi_y = poi.y;
@@ -236,10 +259,10 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float dx = poi_x - px;
     float dz = poi_z - pz;
     float dy = poi_y - py; 
-    float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
+    float dist = sqrt( dx*dx + dz*dz ); 
 
     if ( dist >= max_dist ) {
-      continue; // skip if too far away
+      continue; // skip if too far away // break; // we are sorted
     }
     
     float acf_wrl[4] = {	
@@ -267,12 +290,9 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
-      if ( dist < 5000.0f ) {
-	sprintf( buffer, "%s %s %.1f m", id, poi.name.c_str(), dist );
-      } else {
-	dist /= 1000.0f;
-	sprintf( buffer, "%s %s %.1f km", id, poi.name.c_str(), dist );
-      }
+      make_dist_str( dist, dist_buf, units );
+      sprintf( buffer, "%s | %s", poi.name.c_str(), dist_buf );
+
       int len = strlen(buffer);
       
       float box_y = final_y + 12 + 10; // We put box above
@@ -290,7 +310,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 			     1 /* do depth testing */,
 			     0 /* no depth writing */
 			     );
-	glColor3f(0, 1, 0); // green
+	glColor3f(0, 0, 1); // blue
 	float half_width  = 10;
 	float half_height = 10;
 	glBegin(GL_LINE_LOOP);
@@ -317,9 +337,27 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   return 1;
 }
 
-int toggle_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
-    show_label = ( ! show_label );
+    show_ac_label = ( ! show_ac_label );
+  }
+  return 0;
+}
+
+int toggle_ap_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    show_ap_label = ( ! show_ap_label );
+  }
+  return 0;
+}
+
+int toggle_units_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    if ( units == 0 ) {
+      units = 1; // maybe more than 1 later
+    } else {
+      units = 0;
+    }
   }
   return 0;
 }
@@ -365,8 +403,14 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   dr_screen_width.init();
   dr_screen_height.init();
 
-  toggle_label_cmd = XPLMCreateCommand("durian/xlabel/toggle_label", "Toggle label");
-  XPLMRegisterCommandHandler(toggle_label_cmd, toggle_label_handler, 0, (void *)0);
+  toggle_ac_label_cmd = XPLMCreateCommand("durian/xlabel/toggle_ac_label", "Toggle a/c label");
+  XPLMRegisterCommandHandler(toggle_ac_label_cmd, toggle_ac_label_handler, 0, (void *)0);
+
+  toggle_ap_label_cmd = XPLMCreateCommand("durian/xlabel/toggle_ap_label", "Toggle airport/poi label");
+  XPLMRegisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
+
+  toggle_units_cmd = XPLMCreateCommand("durian/xlabel/toggle_units", "Toggle meters/feet");
+  XPLMRegisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
 
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
@@ -377,7 +421,9 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
 PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMUnregisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);
-  XPLMUnregisterCommandHandler(toggle_label_cmd, toggle_label_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_ac_label_cmd, toggle_ac_label_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
 }
 
 PLUGIN_API int XPluginEnable(void) {

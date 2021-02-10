@@ -23,16 +23,21 @@
 
 namespace XLABEL {
 
-  XPLMCommandRef toggle_label_cmd;
-  bool show_label = false;
+  XPLMCommandRef toggle_ac_label_cmd;
+  XPLMCommandRef toggle_ap_label_cmd;
+  XPLMCommandRef toggle_units_cmd;
+  bool show_ac_label = false;
+  bool show_ap_label = false;
   int  label_kind = 0;
-  
+  int  units = 0; // 0=metric, 1=feet/knots/nm
+    
   DRefInt dr_tcas_num_acf{"sim/cockpit2/tcas/indicators/tcas_num_acf"};
   DRefInt dr_override_TCAS{"sim/operation/override/override_TCAS"};
   DRefInt dr_acf_modeS_id{"sim/aircraft/view/acf_modeS_id"};
   DRefFloatArray dr_tcas_pos_x{"sim/cockpit2/tcas/targets/position/x"};
   DRefFloatArray dr_tcas_pos_y{"sim/cockpit2/tcas/targets/position/y"};
   DRefFloatArray dr_tcas_pos_z{"sim/cockpit2/tcas/targets/position/z"};
+  DRefFloatArray dr_tcas_pos_ele{"sim/cockpit2/tcas/targets/position/ele"};
   
   DRefFloatArray dr_rel_dist_mtrs{"sim/cockpit2/tcas/indicators/relative_distance_mtrs"};
   DRefFloatArray dr_ref_alt_mtrs{"sim/cockpit2/tcas/indicators/relative_altitude_mtrs"};
@@ -67,7 +72,8 @@ namespace XLABEL {
     dr_tcas_pos_x.get_all();
     dr_tcas_pos_y.get_all();
     dr_tcas_pos_z.get_all();
-
+    dr_tcas_pos_ele.get_all();
+    
     dr_V_msc.get_all();
     dr_vertical_speed.get_all();
  
@@ -128,6 +134,13 @@ namespace XLABEL {
     }
   }
 
+  float dist_between(const poi& lhs, const poi& rhs) {
+    float dx = lhs.x - rhs.x;
+    //float dy = lhs.y - rhs.y; // not used
+    float dz = lhs.z - rhs.z;
+    return sqrt( dx*dx + dz*dz ); // for sorting we can do w/o the sqrt...
+  }
+  
   void poi_to_local(double lat, double lon, double& x, double& y, double& z) {
     XPLMWorldToLocal( lat, lon, 0, &x, &y, &z );
     
@@ -208,4 +221,44 @@ namespace XLABEL {
     return true;      
   }
 
+  // dist, speed, alt
+  // append?
+  void make_dist_str( float dist_m, char* buffer, int units ) {
+    if ( units == 0 ) { // metric
+      if ( dist_m > 5000.0f ) {
+	sprintf( buffer, "%.1f km", dist_m/1000.0 );
+      } else {
+	sprintf( buffer, "%i m", int(dist_m) );
+      }
+    } else {
+      //float dist_nm = dist_m * 0.000539957;
+      float dist_ft = dist_m * 3.28084;
+      if ( dist_ft > 12000.0f ) {
+	sprintf( buffer, "%.1f nm", dist_ft * 0.000164579); // ft to nm
+      } else {
+	sprintf( buffer, "%i f", int(dist_ft) );
+      }
+    }
+  }
+
+  void make_spd_str( float v_msc, char* buffer, int units ) {
+    sprintf( buffer, "%i kn", int(v_msc*1.943844) );
+  }
+
+  void make_alt_str( float alt_m, char* buffer, int units ) {
+    if ( units == 0 ) {
+      int m = int(alt_m);
+      if ( m > 1000 ) {
+	m = (m + 5) / 10 * 10;
+      }
+      sprintf( buffer, "%i m", m );
+    } else {
+      int ft = int(alt_m * 3.28084);
+      if ( ft > 1000 ) {
+	ft = (ft + 50) / 100 * 100;
+      }
+      sprintf( buffer, "%i ft", ft );
+    }
+  }
+  
 }
