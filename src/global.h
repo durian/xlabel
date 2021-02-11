@@ -60,8 +60,8 @@ namespace XLABEL {
   void poi_to_local(double lat, double lon, double& x, double& y, double& z);
   size_t listify(const std::string& s, std::vector<std::string>& v);
   struct poi { 
-    float lat;
-    float lon;
+    double lat;
+    double lon;
     float alt;
     int   dst; // have to be closer than n meter distance
     std::string name;
@@ -71,6 +71,7 @@ namespace XLABEL {
     int    update;
   };
   float dist_between(const poi& lhs, const poi& rhs);
+  double dist_latlon(double lat0, double lon0, double lat1, double lon1);
   bool read_pois( const std::string& filename, std::vector<poi>& pois );
 
   void make_dist_str( float dist_m, char* buffer, int units );

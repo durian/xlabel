@@ -16,6 +16,7 @@
 #include <cctype>
 #include <locale>
 #include <random>
+#include "cmath"
 
 #include "Log.h"
 #include "dr.h"
@@ -140,7 +141,16 @@ namespace XLABEL {
     float dz = lhs.z - rhs.z;
     return sqrt( dx*dx + dz*dz ); // for sorting we can do w/o the sqrt...
   }
-  
+
+  // https://blog.mapbox.com/fast-geodesic-approximations-with-cheap-ruler-106f229ad016
+  static double DEGTORAD = 3.1415926536 / 180.0;
+  double dist_latlon(double lat0, double lon0, double lat1, double lon1) {
+    double dy = 12430 * ((lat0-lat1) / 180.0);
+    double dx = 24901 * ((lon0-lon1) / 360.0) * cos( ((lat0+lat1)/2.0) * DEGTORAD ); 
+    double dist = sqrt( dy*dy + dx*dx );
+    return dist;
+  }
+
   void poi_to_local(double lat, double lon, double& x, double& y, double& z) {
     XPLMWorldToLocal( lat, lon, 0, &x, &y, &z );
     

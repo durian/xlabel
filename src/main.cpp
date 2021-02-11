@@ -213,7 +213,9 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   float px = dr_pos_x.get_float();
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();
-
+  double plat = dr_pos_latitude.get_double();
+  double plon = dr_pos_longitude.get_double();
+  
   double poi_x;
   double poi_y;
   double poi_z;
@@ -224,16 +226,35 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 
   // we don't need to sort every frame, once a second is enough...
   
-  poi p{0, 0, 0, 0, "", px, py, pz }; // hmmm
+  poi p{plat, plon, 0, 0, "", px, py, pz }; // hmmm
   std::sort( begin(pois),
 	     end(pois),
-	     [p](const poi& lhs, const poi& rhs) { return dist_between(p, lhs) < dist_between(p, rhs); }
+	     //[p](const poi& lhs, const poi& rhs) { return dist_between(p, lhs) < dist_between(p, rhs); }
+	     [p](const poi& lhs, const poi& rhs) {
+	       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
+	     }
 	     );
+  
+  int c = 10;
+  lg.xplm( "---\n" );
+  for ( auto& poi : pois) {
+    lg.xplm( "Closest to: "+poi.name+", "+std::to_string(poi.dst)+"\n" );
+    if ( --c <= 0 ) {
+      break;
+    }
+  }
+  
+  
   //poi p0 = pois[0]; // ptr instead
   //float p0dist = dist_between(p, p0);
   //lg.xplm( "Closest to: "+p0.name+", "+std::to_string(p0dist)+"\n" );
     
-  // When sorted, we can stop after first one which is too far away.
+  // When sorted, we can stop after first one which is too far away?
+
+  // Problem is that due to the nature of the WorldToLocal function, we get fields
+  // that are really far away close to the plane.
+  // We need to use lat/lon for this.
+  
   for ( auto& poi : pois) {
     
     double plat = poi.lat; //dr_pos_latitude.get_double();
@@ -261,7 +282,9 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float dy = poi_y - py; 
     float dist = sqrt( dx*dx + dz*dz ); 
 
-    if ( dist >= max_dist ) {
+    //lg.xplm( "POI: "+poi.name+", "+std::to_string(dist)+"\n" );
+    // doesn't work because irst time pois are not initialised so sort doesn't work.
+    if ( (poi.update == 0) && (dist >= max_dist) ) {
       continue; // skip if too far away // break; // we are sorted
     }
     
