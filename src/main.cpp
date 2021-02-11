@@ -7,6 +7,7 @@
 #include "XPLMNavigation.h"
 #include "XPLMScenery.h"
 #include "XPLMPlugin.h"
+#include "XPLMProcessing.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -47,6 +48,7 @@ DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 */
 
 std::vector<poi> pois;
+float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
 
 // just make a function, get_dist_str(..), get-alt_str(...)
 
@@ -270,7 +272,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       poi_y += alt;
       poi.z = poi_z;
       poi.update = 0;
-      lg.xplm( "Init POI "+poi.name+"\n" );
+      //lg.xplm( "Init POI "+poi.name+"\n" );
     } else {
       poi_x = poi.x;
       poi_y = poi.y;
@@ -437,6 +439,8 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
 
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
+
+  XPLMRegisterFlightLoopCallback(flight_loop, 1, NULL);
   
   return 1;
 }
@@ -447,6 +451,7 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_ac_label_cmd, toggle_ac_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
+  XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
 }
 
 PLUGIN_API int XPluginEnable(void) {
@@ -467,6 +472,47 @@ PLUGIN_API void XPluginDisable(void) {
 }
 
 PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void * inParam) {
+  if ( inMsg == XPLM_MSG_PLANE_LOADED ) {
+    lg.xplm( "Plane loaded\n" );
+
+    double poi_x;
+    double poi_y;
+    double poi_z;
+
+    for ( auto& poi : pois) {
+      double plat = poi.lat; //dr_pos_latitude.get_double();
+      double plon = poi.lon; //dr_pos_longitude.get_double();
+      float  alt  = poi.alt;
+      int max_dist = poi.dst;
+      poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
+      poi.x = poi_x;
+      poi.y = poi_y;
+      poi_y += alt;
+      poi.z = poi_z;
+      poi.update = 0;
+    }
+      
+    double plat = dr_pos_latitude.get_double();
+    double plon = dr_pos_longitude.get_double();
+    poi p{plat, plon, 0, 0, "", 0, 0, 0 }; // hmmm
+    std::sort( begin(pois),
+	       end(pois),
+	       [p](const poi& lhs, const poi& rhs) {
+		 return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
+	       }
+	       );
+  
+    int c = 10;
+    lg.xplm( "---\n" );
+    for ( auto& poi : pois) {
+      lg.xplm( "Closest to: "+poi.name+", "+std::to_string(poi.dst)+"\n" );
+      if ( --c <= 0 ) {
+	break;
+      }
+    }
+    lg.xplm( "Plane loaded end\n" );
+  }
+  
   if ( inMsg == XPLM_MSG_SCENERY_LOADED ) {
     lg.xplm( "Scenery reload\n" );
     for ( auto& poi : pois) {
@@ -474,6 +520,27 @@ PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void * inP
     }
     lg.xplm( "Scenery reloaded\n" );
   }
+}
+
+float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon) {
+
+  (void)inElapsedTimeSinceLastFlightLoop;
+  (void)inCounter;
+  (void)inRefcon;
+
+  double elapsed = inElapsedSinceLastCall;
+  
+  double plat = dr_pos_latitude.get_double();
+  double plon = dr_pos_longitude.get_double();
+  poi p{plat, plon, 0, 0, "", 0, 0, 0 }; // hmmm
+  std::sort( begin(pois),
+	     end(pois),
+	     [p](const poi& lhs, const poi& rhs) {
+	       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
+	     }
+	     );
+  
+  return 1; //XDROP_INTERVAL; // PJB FIXME TODO once a second?
 }
 
 
