@@ -212,11 +212,12 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   dr_matrix_proj.get_all_ref( &proj[0], 16 );
   float acf_eye[4], acf_ndc[4];
 
+  // user's plane position
   float px = dr_pos_x.get_float();
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();
-  double plat = dr_pos_latitude.get_double();
-  double plon = dr_pos_longitude.get_double();
+  double uplat = dr_pos_latitude.get_double(); 
+  double uplon = dr_pos_longitude.get_double();
   
   double poi_x;
   double poi_y;
@@ -227,8 +228,9 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   char spd_buf[32];
 
   // we don't need to sort every frame, once a second is enough...
-  
-  poi p{plat, plon, 0, 0, "", px, py, pz }; // hmmm
+
+  /*
+  poi p{uplat, uplon, 0, 0, "", px, py, pz }; // hmmm
   std::sort( begin(pois),
 	     end(pois),
 	     //[p](const poi& lhs, const poi& rhs) { return dist_between(p, lhs) < dist_between(p, rhs); }
@@ -245,7 +247,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       break;
     }
   }
-  
+  */
   
   //poi p0 = pois[0]; // ptr instead
   //float p0dist = dist_between(p, p0);
@@ -265,14 +267,13 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float longitude;
     float alt = poi.alt;
     int max_dist = poi.dst;
-    if ( poi.update == 1 ) { // Made 1 on scenery reload to trigger recalculation.
+    if ( poi.update == 1 ) { // For init, and made 1 on scenery reload to trigger recalculation. Could be done there
       poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
       poi.x = poi_x;
       poi.y = poi_y;
       poi_y += alt;
       poi.z = poi_z;
       poi.update = 0;
-      //lg.xplm( "Init POI "+poi.name+"\n" );
     } else {
       poi_x = poi.x;
       poi_y = poi.y;
@@ -282,13 +283,16 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float dx = poi_x - px;
     float dz = poi_z - pz;
     float dy = poi_y - py; 
-    float dist = sqrt( dx*dx + dz*dz ); 
-
-    //lg.xplm( "POI: "+poi.name+", "+std::to_string(dist)+"\n" );
-    // doesn't work because irst time pois are not initialised so sort doesn't work.
-    if ( (poi.update == 0) && (dist >= max_dist) ) {
+    //float dist = sqrt( dx*dx + dz*dz ); // should be lat/lon
+    double latlon_dist = dist_latlon(uplat, uplon, plat, plon); // but not exact.... hmmm
+    //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
+    
+    // doesn't work because the first time pois are not initialised so sort doesn't work.
+    if ( latlon_dist >= max_dist ) {
       continue; // skip if too far away // break; // we are sorted
     }
+
+    float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
     
     float acf_wrl[4] = {	
       (float)poi_x,
@@ -469,12 +473,14 @@ PLUGIN_API int XPluginEnable(void) {
 }
 
 PLUGIN_API void XPluginDisable(void) {
+  lg.xplm( "XPluginDisable(void) to be implemented.\n" );
 }
 
 PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void * inParam) {
   if ( inMsg == XPLM_MSG_PLANE_LOADED ) {
     lg.xplm( "Plane loaded\n" );
 
+    /*
     double poi_x;
     double poi_y;
     double poi_z;
@@ -491,7 +497,8 @@ PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void * inP
       poi.z = poi_z;
       poi.update = 0;
     }
-      
+    */
+    
     double plat = dr_pos_latitude.get_double();
     double plon = dr_pos_longitude.get_double();
     poi p{plat, plon, 0, 0, "", 0, 0, 0 }; // hmmm
@@ -502,24 +509,34 @@ PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void * inP
 	       }
 	       );
   
-    int c = 10;
-    lg.xplm( "---\n" );
-    for ( auto& poi : pois) {
-      lg.xplm( "Closest to: "+poi.name+", "+std::to_string(poi.dst)+"\n" );
-      if ( --c <= 0 ) {
-	break;
-      }
-    }
     lg.xplm( "Plane loaded end\n" );
   }
   
   if ( inMsg == XPLM_MSG_SCENERY_LOADED ) {
     lg.xplm( "Scenery reload\n" );
+
+    double plat;
+    double plon;
+    float alt;
+    double poi_x;
+    double poi_y;
+    double poi_z;
     for ( auto& poi : pois) {
-      poi.update = 1;
+      poi.update = 1; // recalculate local position.
+      plat = poi.lat; //dr_pos_latitude.get_double();
+      plon = poi.lon; //dr_pos_longitude.get_double();
+      alt  = poi.alt;
+      poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
+      poi.x = poi_x;
+      poi.y = poi_y;
+      poi_y += alt;
+      poi.z = poi_z;
+      poi.update = 0;
     }
+    
     lg.xplm( "Scenery reloaded\n" );
   }
+  
 }
 
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon) {
@@ -532,6 +549,10 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   
   double plat = dr_pos_latitude.get_double();
   double plon = dr_pos_longitude.get_double();
+  float px = dr_pos_x.get_float();
+  float py = dr_pos_y.get_float();
+  float pz = dr_pos_z.get_float();
+
   poi p{plat, plon, 0, 0, "", 0, 0, 0 }; // hmmm
   std::sort( begin(pois),
 	     end(pois),
@@ -539,6 +560,21 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 	       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
 	     }
 	     );
+  /*
+  int c = 10;
+  for ( auto& poi : pois) {
+
+    double latlon_dist = 1000.0 * dist_latlon(plat, plon, poi.lat, poi.lon);
+    float dx = px - poi.x;
+    float dz = pz - poi.z;
+    float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
+
+    lg.xplm( "Closest to: "+poi.name+", "+std::to_string(latlon_dist)+", "+std::to_string(dist)+"\n" );
+    if ( --c <= 0 ) {
+      break;
+    }
+  }
+  */
   
   return 1; //XDROP_INTERVAL; // PJB FIXME TODO once a second?
 }

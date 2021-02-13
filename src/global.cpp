@@ -144,12 +144,19 @@ namespace XLABEL {
 
   // https://blog.mapbox.com/fast-geodesic-approximations-with-cheap-ruler-106f229ad016
   static double DEGTORAD = 3.1415926536 / 180.0;
-  double dist_latlon(double lat0, double lon0, double lat1, double lon1) {
+  double dist_latlon_off(double lat0, double lon0, double lat1, double lon1) {
     double dy = 12430 * ((lat0-lat1) / 180.0);
     double dx = 24901 * ((lon0-lon1) / 360.0) * cos( ((lat0+lat1)/2.0) * DEGTORAD ); 
     double dist = sqrt( dy*dy + dx*dx );
     return dist;
   }
+
+  double dist_latlon(double lat0, double lon0, double lat1, double lon1) {
+  double slat = sin((lat1-lat0) * (double)(M_PI/360));
+  double slon = sin((lon1-lon0) * (double)(M_PI/360));
+  double aa   = slat*slat + cos(lat0 * (double)(M_PI/180)) * cos(lat1 * (double)(M_PI/180)) * slon * slon;
+  return 6378145.0 * 2 * atan2(sqrtf(aa), sqrt(1-aa));
+}
 
   void poi_to_local(double lat, double lon, double& x, double& y, double& z) {
     XPLMWorldToLocal( lat, lon, 0, &x, &y, &z );
@@ -220,8 +227,8 @@ namespace XLABEL {
 	  std::string lbl = bits[4];
 	  pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1 } );
 	  ++poi_counter;
-	  sprintf( buffer, "Added POI %i: %.4f, %.4f, %.4f, %i, %s\n", poi_counter, lat, lon, alt, dst, lbl.c_str() );
-	  lg.xplm( buffer );
+	  //sprintf( buffer, "Added POI %i: %.4f, %.4f, %.4f, %i, %s\n", poi_counter, lat, lon, alt, dst, lbl.c_str() );
+	  //lg.xplm( buffer );
 	} catch (...) {
 	  lg.xplm( "Error in POI file.\n" );
 	}
