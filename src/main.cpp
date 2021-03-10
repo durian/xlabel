@@ -64,6 +64,27 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   // Read the model view and projection matrices from this frame
   dr_matrix_wrl.get_all_ref( &mv[0], 16 );
   dr_matrix_proj.get_all_ref( &proj[0], 16 );
+
+  static int printed = 0;
+  if ( ! printed ) {
+    char buffer[256];
+    for( int i = 0; i < 4; i++ ) {
+      sprintf( buffer, "m_wrl %.2f %.2f %.2f %.2f\n", mv[0+i*4], mv[1+i*4], mv[2+i*4], mv[3+i*4] ); 
+      lg.xplm( std::string(buffer) );
+    }
+    for( int i = 0; i < 4; i++ ) {
+      sprintf( buffer, "proj  %.2f %.2f %.2f %.2f\n", proj[0+i*4], proj[1+i*4], proj[2+i*4], proj[3+i*4] ); 
+      lg.xplm( std::string(buffer) );
+    }
+    /*
+    sprintf( buffer, "r %.2f %.2f %.2f\n", r[0], r[1], r[2] ); 
+    lg.xplm( std::string(buffer) );
+    sprintf( buffer, "u %.2f %.2f %.2f\n", u[0], u[1], u[2] ); 
+    lg.xplm( std::string(buffer) );
+    */
+    printed = 1;
+  }
+
   float acf_eye[4], acf_ndc[4];
 
   float px = dr_pos_x.get_float();
@@ -258,7 +279,8 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   // Problem is that due to the nature of the WorldToLocal function, we get fields
   // that are really far away close to the plane.
   // We need to use lat/lon for this.
-  
+
+  auto max_shown = 12;
   for ( auto& poi : pois) {
     
     double plat = poi.lat; //dr_pos_latitude.get_double();
@@ -288,8 +310,9 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
     
     // doesn't work because the first time pois are not initialised so sort doesn't work.
-    if ( latlon_dist >= max_dist ) {
-      continue; // skip if too far away // break; // we are sorted
+    if ( latlon_dist >= max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
+      //break;//continue; // skip if too far away // break; // we are sorted
+      continue;
     }
 
     float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
@@ -361,7 +384,12 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       }
       
     }
-  }
+    
+    if ( --max_shown <= 0 ) {
+      break;
+    }
+    
+  } // for
   
   return 1;
 }
@@ -546,6 +574,10 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   (void)inRefcon;
 
   double elapsed = inElapsedSinceLastCall;
+
+  if ( ! show_ap_label ) {
+    return 10;
+  }
   
   double plat = dr_pos_latitude.get_double();
   double plon = dr_pos_longitude.get_double();
@@ -576,7 +608,7 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   }
   */
   
-  return 1; //XDROP_INTERVAL; // PJB FIXME TODO once a second?
+  return 10; //XDROP_INTERVAL; // PJB FIXME TODO once a second?
 }
 
 
