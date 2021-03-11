@@ -2,10 +2,12 @@
 #define _GLOBAL_H
 
 #include "XPLMUtilities.h"
+#include "XPLMInstance.h"
 
 #include <vector>
 #include <string>
 
+#include "Smoker.h"
 #include "dr.h"
 
 // using namespace XLABEL;
@@ -43,6 +45,9 @@ namespace XLABEL {
   extern DRefInt dr_screen_width;
   extern DRefInt dr_screen_height;
 
+  extern Smoker *pss_obj;
+  extern std::vector<Smoker*> smokers;
+  
   bool get_tcas_positions();
   void mult_matrix_vec(float dst[4], const float m[16], const float v[4]);
 

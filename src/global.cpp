@@ -2,6 +2,7 @@
 #include "XPLMNavigation.h"
 #include "XPLMScenery.h"
 #include "XPLMGraphics.h"
+#include "XPLMInstance.h"
 
 #include <vector>
 #include <string>
@@ -19,6 +20,7 @@
 #include "cmath"
 
 #include "Log.h"
+#include "Smoker.h"
 #include "dr.h"
 #include "global.h"
 
@@ -57,6 +59,9 @@ namespace XLABEL {
   DRefInt dr_screen_width{"sim/graphics/view/window_width"};
   DRefInt dr_screen_height{"sim/graphics/view/window_height"};
 
+  Smoker *pss_obj  = nullptr;
+  std::vector<Smoker*> smokers;
+  
   bool get_tcas_positions() {
 #ifdef DBG
     lg.xplm( "get_tcas_positions() START\n" );

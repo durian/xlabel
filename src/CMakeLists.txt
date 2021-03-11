@@ -72,6 +72,7 @@ list(APPEND XLABEL_SRCS
   main.cpp
   global.cpp
   Log.cpp
+  Smoker.cpp
   dr.cpp
   ) 
 

@@ -8,6 +8,7 @@
 #include "XPLMScenery.h"
 #include "XPLMPlugin.h"
 #include "XPLMProcessing.h"
+#include "XPLMInstance.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -32,6 +33,7 @@
 // Mine
 #include "dr.h"
 #include "Log.h"
+#include "Smoker.h"
 #include "global.h"
 
 using namespace XLABEL;
@@ -49,6 +51,7 @@ DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 
 std::vector<poi> pois;
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
+float smoker_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
 
 // just make a function, get_dist_str(..), get-alt_str(...)
 
@@ -340,6 +343,10 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       
       float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
+      int indent = max_shown % 3;
+      if ( dist > 5000 ) {
+	final_y = screen_h - 34 - (24 * indent); // TEST
+      }
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
       make_dist_str( dist, dist_buf, units );
@@ -398,6 +405,22 @@ int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     show_ac_label = ( ! show_ac_label );
   }
+
+  // draw an object at plane's pos.
+  float px = dr_pos_x.get_float();
+  float py = dr_pos_y.get_float();
+  float pz = dr_pos_z.get_float();
+
+  Smoker *s = new Smoker();
+  s->load_obj( pss_obj->path ); // copy from the global one
+  smokers.push_back( s );
+  
+  lg.xplm( "pss_obj->instantiate();\n");
+  s->instantiate();
+  lg.xplm( "pss_obj->set_pos();\n");
+  s->set_pos( px, py, pz );
+  lg.xplm( "pss_obj->set_pos() ready;\n");
+  
   return 0;
 }
 
@@ -405,6 +428,10 @@ int toggle_ap_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     show_ap_label = ( ! show_ap_label );
   }
+
+  //delete pss_obj;
+  //pss_obj->deinstantiate();
+  
   return 0;
 }
 
@@ -452,6 +479,17 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
     lg.xplm( " POS AI x/y/z "+std::to_string(lx)+", "+std::to_string(ly)+", "+std::to_string(lz)+"\n" );
   }
 
+  // Load a particle object. Just one at the moment.
+  std::string pss_obj_filename = std::string(filebase) + sep + "xlabel.obj";
+  lg.xplm( pss_obj_filename + "\n" );
+  pss_obj = new Smoker();
+  pss_obj->load_obj( pss_obj_filename );
+  if ( ! pss_obj ) {
+    lg.xplm( "ERROR loading " + pss_obj_filename + "\n" );
+  } else {
+    lg.xplm( "Loaded " + pss_obj_filename + "\n" );
+  }
+  
   dr_pos_x.init();
   dr_pos_y.init();
   dr_pos_z.init();
@@ -472,7 +510,8 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
 
-  XPLMRegisterFlightLoopCallback(flight_loop, 1, NULL);
+  XPLMRegisterFlightLoopCallback(flight_loop, 10, NULL);
+  XPLMRegisterFlightLoopCallback(smoker_loop, -1, NULL);
   
   return 1;
 }
@@ -484,6 +523,7 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
   XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
+  XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);
 }
 
 PLUGIN_API int XPluginEnable(void) {
@@ -609,6 +649,46 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   */
   
   return 10; //XDROP_INTERVAL; // PJB FIXME TODO once a second?
+}
+
+struct smoker_deleter {
+  void operator()(Smoker*& s) { 
+    if (s->life_time < 0.0) {
+      XPLMDestroyInstance( s->instance );
+      // delete Motor?
+      delete s;
+      s = nullptr;
+    }
+  }
+};
+
+float smoker_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon) {
+
+  (void)inElapsedTimeSinceLastFlightLoop;
+  (void)inCounter;
+  (void)inRefcon;
+
+  double elapsed = inElapsedSinceLastCall;
+
+  // Delete old ones
+  for_each( smokers.begin(), smokers.end(), smoker_deleter() );
+  std::vector<Smoker*>::iterator new_end = remove( smokers.begin(),
+						  smokers.end(),
+						  static_cast<Smoker*>(NULL)
+						  );
+  smokers.erase( new_end, smokers.end() );
+
+  float px = dr_pos_x.get_float();
+  float py = dr_pos_y.get_float();
+  float pz = dr_pos_z.get_float();
+
+  for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
+    Smoker *s   = *si;
+    s->life_time -= elapsed;
+    //s->set_pos(px, py, pz); // just attach them to plane
+  }
+  
+  return -1;
 }
 
 
