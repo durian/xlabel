@@ -404,22 +404,22 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     show_ac_label = ( ! show_ac_label );
-  }
-
-  // draw an object at plane's pos.
-  float px = dr_pos_x.get_float();
-  float py = dr_pos_y.get_float();
-  float pz = dr_pos_z.get_float();
-
-  Smoker *s = new Smoker();
-  s->load_obj( pss_obj->path ); // copy from the global one
-  smokers.push_back( s );
   
-  lg.xplm( "pss_obj->instantiate();\n");
-  s->instantiate();
-  lg.xplm( "pss_obj->set_pos();\n");
-  s->set_pos( px, py, pz );
-  lg.xplm( "pss_obj->set_pos() ready;\n");
+    // draw an object at plane's pos.
+    float px = dr_pos_x.get_float();
+    float py = dr_pos_y.get_float();
+    float pz = dr_pos_z.get_float();
+    
+    Smoker *s = new Smoker();
+    s->load_obj( pss_obj->path ); // copy from the global one
+    smokers.push_back( s );
+    
+    lg.xplm( "pss_obj->instantiate();\n");
+    s->instantiate();
+    lg.xplm( "pss_obj->set_pos();\n");
+    s->set_pos( px, py, pz );
+    lg.xplm( "pss_obj->set_pos() ready;\n");
+  }
   
   return 0;
 }
