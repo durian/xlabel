@@ -28,6 +28,7 @@ namespace XLABEL {
 
   XPLMCommandRef toggle_ac_label_cmd;
   XPLMCommandRef toggle_ap_label_cmd;
+  XPLMCommandRef toggle_ap_smoker_cmd;
   XPLMCommandRef toggle_units_cmd;
   bool show_ac_label = false;
   bool show_ap_label = false;

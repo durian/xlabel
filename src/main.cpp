@@ -51,9 +51,6 @@ DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 
 std::vector<poi> pois;
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
-float smoker_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
-
-// just make a function, get_dist_str(..), get-alt_str(...)
 
 // ----
 
@@ -401,6 +398,71 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   return 1;
 }
 
+// Put a smoke thingt at airports
+static void smoke_airports() {
+
+  if ( pois.size() == 0 ) {
+    return;
+  }
+  
+  // user's plane position
+  float px = dr_pos_x.get_float();
+  float py = dr_pos_y.get_float();
+  float pz = dr_pos_z.get_float();
+  double uplat = dr_pos_latitude.get_double(); 
+  double uplon = dr_pos_longitude.get_double();
+  
+  double poi_x;
+  double poi_y;
+  double poi_z;
+
+  char dist_buf[32];
+  char alt_buf[32];
+  char spd_buf[32];
+
+  auto max_shown = 12;
+  for ( auto& poi : pois) {
+    
+    double plat = poi.lat; //dr_pos_latitude.get_double();
+    double plon = poi.lon; //dr_pos_longitude.get_double();
+    float latitude;
+    float longitude;
+    float alt = poi.alt;
+    int max_dist = poi.dst;
+    poi_x = poi.x;
+    poi_y = poi.y;
+    poi_z = poi.z;
+    
+    float dx = poi_x - px;
+    float dz = poi_z - pz;
+    float dy = poi_y - py; 
+
+    double latlon_dist = dist_latlon(uplat, uplon, plat, plon); // but not exact.... hmmm
+    lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
+    
+    if ( latlon_dist >= max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
+      //break;//continue; // skip if too far away // break; // we are sorted
+      continue;
+    }
+
+    Smoker *s = new Smoker();
+    s->load_obj( pss_obj->path ); // copy from the global one
+    smokers.push_back( s );
+    
+    lg.xplm( "pss_obj->instantiate();\n");
+    s->instantiate();
+    lg.xplm( "pss_obj->set_pos();\n");
+    s->set_pos( poi_x, poi_y, poi_z );
+    lg.xplm( "pss_obj->set_pos() ready;\n");
+    
+    if ( --max_shown <= 0 ) {
+      break;
+    }
+    
+  } // for
+
+}
+
 int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     show_ac_label = ( ! show_ac_label );
@@ -428,10 +490,13 @@ int toggle_ap_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     show_ap_label = ( ! show_ap_label );
   }
+  return 0;
+}
 
-  //delete pss_obj;
-  //pss_obj->deinstantiate();
-  
+int toggle_ap_smoker_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    smoke_airports();
+  }
   return 0;
 }
 
@@ -504,6 +569,9 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   toggle_ap_label_cmd = XPLMCreateCommand("durian/xlabel/toggle_ap_label", "Toggle airport/poi label");
   XPLMRegisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
 
+  toggle_ap_smoker_cmd = XPLMCreateCommand("durian/xlabel/toggle_ap_smoker", "Toggle airport/poi smoker");
+  XPLMRegisterCommandHandler(toggle_ap_smoker_cmd, toggle_ap_smoker_handler, 0, (void *)0);
+
   toggle_units_cmd = XPLMCreateCommand("durian/xlabel/toggle_units", "Toggle meters/feet");
   XPLMRegisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
 
@@ -521,6 +589,7 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);
   XPLMUnregisterCommandHandler(toggle_ac_label_cmd, toggle_ac_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_ap_smoker_cmd, toggle_ap_smoker_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
   XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
   XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);
@@ -650,47 +719,6 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   
   return 10; //XDROP_INTERVAL; // PJB FIXME TODO once a second?
 }
-
-struct smoker_deleter {
-  void operator()(Smoker*& s) { 
-    if (s->life_time < 0.0) {
-      XPLMDestroyInstance( s->instance );
-      // delete Motor?
-      delete s;
-      s = nullptr;
-    }
-  }
-};
-
-float smoker_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon) {
-
-  (void)inElapsedTimeSinceLastFlightLoop;
-  (void)inCounter;
-  (void)inRefcon;
-
-  double elapsed = inElapsedSinceLastCall;
-
-  // Delete old ones
-  for_each( smokers.begin(), smokers.end(), smoker_deleter() );
-  std::vector<Smoker*>::iterator new_end = remove( smokers.begin(),
-						  smokers.end(),
-						  static_cast<Smoker*>(NULL)
-						  );
-  smokers.erase( new_end, smokers.end() );
-
-  float px = dr_pos_x.get_float();
-  float py = dr_pos_y.get_float();
-  float pz = dr_pos_z.get_float();
-
-  for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
-    Smoker *s   = *si;
-    s->life_time -= elapsed;
-    //s->set_pos(px, py, pz); // just attach them to plane
-  }
-  
-  return -1;
-}
-
 
 // ----
 

@@ -1,5 +1,5 @@
-#ifndef _OBJECT_H
-#define _OBJECT_H
+#ifndef _SMOKER_H
+#define _SMOKER_H
 
 #include <string>
 #include <iostream>
@@ -9,6 +9,7 @@
 
 #include "XPLMScenery.h"
 #include "XPLMInstance.h"
+#include "XPLMProcessing.h"
 
 // ----------------------------------------------------------------------------
 // Class
@@ -25,6 +26,7 @@ namespace XLABEL {
     XPLMObjectRef obj;// = XPLMLoadObject(objname)
     XPLMInstanceRef instance;
     float life_time;
+    int mode;
     Smoker();
     ~Smoker();
     
@@ -33,7 +35,8 @@ namespace XLABEL {
     void deinstantiate();
     void set_pos(float x, float y, float z);
   };
-
+  
+  float smoker_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
   
 }
 

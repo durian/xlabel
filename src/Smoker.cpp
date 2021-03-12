@@ -16,9 +16,11 @@
 #include "XPLMUtilities.h"
 #include "XPLMScenery.h"
 #include "XPLMInstance.h"
+#include "XPLMProcessing.h"
 
 #include "Smoker.h"
 #include "Log.h"
+#include "global.h"
 #include "defs.h"
 
 namespace XLABEL {
@@ -38,6 +40,7 @@ namespace XLABEL {
     obj       = nullptr;
     instance  = nullptr;
     life_time = 90.0; // seconds
+    mode      = 0; // OpenGL coordinates, 1=plane coordinates
 #ifdef DBG
     lg.xplm("Smoker() init END.\n");
 #endif
@@ -70,7 +73,7 @@ namespace XLABEL {
     }
     path = p;
 #ifdef DBG
-    lg.xplm( "OBJECT "+path+"\n" );
+    lg.xplm( "Smoker "+path+"\n" );
 #endif
     return true;
   }
@@ -94,6 +97,9 @@ namespace XLABEL {
     if ( instance ) {
       XPLMDrawInfo_t loc;
       loc.structSize = sizeof( loc );
+
+      // use mode to distinguish
+      
       loc.x = static_cast<float>(x);
       loc.y = static_cast<float>(y);
       loc.z = static_cast<float>(z);
@@ -110,6 +116,80 @@ namespace XLABEL {
       this->z = z;
     }
   }
+
+
+  // Convert plane coords / opengl coords, to get a point on e.g. engine in
+  // plane coords to world/opengl coords
+  /*
+  // Calculate position from plane coordinates to world coordinates.
+  float phi = dr_plane_phi*(M_PI/180);
+  float psi = dr_plane_psi*(M_PI/180);
+  float the = dr_plane_the*(M_PI/180);
+
+  float x_wrl;
+  float y_wrl;
+  float z_wrl;
+
+  conversion( G.emit_x[i], G.emit_y[i], G.emit_z[i], //+lvz, 
+	      phi, psi, the,
+	      dr_plane_lx, dr_plane_ly, dr_plane_lz, // for +lvz we need this static outside loop?
+	      x_wrl, y_wrl, z_wrl);
+  */
+  void conversion(float x_plane, float y_plane, float z_plane, // = source location in airplane coordinates.  
+		  float phi, float psi, float the, 
+		  float local_x, float local_y, float local_z,  //plane's location in the world 
+		  float& x_wrl, float& y_wrl, float& z_wrl) {  // Gets the result
+    // OUTPUTS:(x_wrl, y_wrl, z_wrl) = transformed location in world.
+    float x_phi = x_plane*cos(phi) + y_plane*sin(phi);
+    float y_phi = y_plane*cos(phi) - x_plane*sin(phi);
+    float z_phi = z_plane;
+    float x_the = x_phi;
+    float y_the = y_phi*cos(the) - z_phi*sin(the);
+    float z_the = z_phi*cos(the) + y_phi*sin(the);
+    x_wrl = x_the*cos(psi) - z_the*sin(psi) + local_x;
+    y_wrl = y_the                           + local_y;
+    z_wrl = z_the*cos(psi) + x_the*sin(psi) + local_z;
+  }
+
+
+  struct smoker_deleter {
+    void operator()(Smoker*& s) { 
+      if (s->life_time < 0.0) {
+	s->deinstantiate();
+	delete s;
+      s = nullptr;
+      }
+    }
+  };
+  
+  float smoker_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon) {
+    
+    (void)inElapsedTimeSinceLastFlightLoop;
+    (void)inCounter;
+    (void)inRefcon;
+    
+    double elapsed = inElapsedSinceLastCall;
+    
+    // Delete old ones
+    for_each( smokers.begin(), smokers.end(), smoker_deleter() );
+    std::vector<Smoker*>::iterator new_end = remove( smokers.begin(),
+						     smokers.end(),
+						     static_cast<Smoker*>(NULL)
+						     );
+    smokers.erase( new_end, smokers.end() );
+    
+    float px = dr_pos_x.get_float();
+    float py = dr_pos_y.get_float();
+    float pz = dr_pos_z.get_float();
+    
+    for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
+      Smoker *s = *si;
+      s->life_time -= elapsed;
+      //s->set_pos(px, py, pz); // just attach them to plane
+    }
+    
+    return -1;
+  } 
   
 }
 // The End --------
