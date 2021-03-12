@@ -33,9 +33,14 @@ namespace XLABEL {
     bool load_obj(std::string&);
     void instantiate();
     void deinstantiate();
+    void update(float);
     void set_pos(float x, float y, float z);
   };
-  
+
+  void conversion(float x_plane, float y_plane, float z_plane, // = source location in airplane coordinates.  
+		  float phi, float psi, float the, 
+		  float local_x, float local_y, float local_z,  //plane's location in the world 
+		  float& x_wrl, float& y_wrl, float& z_wrl);
   float smoker_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
   
 }

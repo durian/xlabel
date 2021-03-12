@@ -52,6 +52,11 @@ namespace XLABEL {
   DRefFloat dr_pos_x{"sim/flightmodel/position/local_x"};
   DRefFloat dr_pos_y{"sim/flightmodel/position/local_y"};
   DRefFloat dr_pos_z{"sim/flightmodel/position/local_z"};
+
+  DRefFloat dr_plane_psi{"sim/flightmodel/position/true_psi"}; // just psi in opengl display?
+  DRefFloat dr_plane_the{"sim/flightmodel/position/true_theta"};
+  DRefFloat dr_plane_phi{"sim/flightmodel/position/phi"};
+  
   DRefDouble dr_pos_latitude{"sim/flightmodel/position/latitude"};
   DRefDouble dr_pos_longitude{"sim/flightmodel/position/longitude"};
   

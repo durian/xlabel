@@ -93,30 +93,64 @@ namespace XLABEL {
     }
   }
 
-  void Smoker::set_pos(float x, float y, float z) {
+  void Smoker::update(float e) {
+    life_time -= e;
+
     if ( instance ) {
       XPLMDrawInfo_t loc;
       loc.structSize = sizeof( loc );
-
-      // use mode to distinguish
-      
-      loc.x = static_cast<float>(x);
-      loc.y = static_cast<float>(y);
-      loc.z = static_cast<float>(z);
-      loc.pitch   = 0;
-      loc.heading = 0;
-      loc.roll    = 0;
       static float dr_val = 0;
       char buffer[256];
-      sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
-      //lg.xplm(  buffer );
-      XPLMInstanceSetPosition(instance, &loc, &dr_val);
-      this->x = x;
-      this->y = y;
-      this->z = z;
+
+      if ( mode == 0 ) { // doesn't need to be done continously! FIXME
+	loc.x = x;
+	loc.y = y;
+	loc.z = z;
+	loc.pitch   = 0;
+	loc.heading = 0;
+	loc.roll    = 0;
+	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
+	//lg.xplm(  buffer );
+	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+      } else if ( mode == 1 ) {
+	// user's plane position/orientation
+	float px = dr_pos_x.get_float();
+	float py = dr_pos_y.get_float();
+	float pz = dr_pos_z.get_float();
+	float phi = dr_plane_phi.get_float() * (M_PI/180); // roll of ac
+	float psi = dr_plane_psi.get_float() * (M_PI/180); // heading
+	float the = dr_plane_the.get_float() * (M_PI/180); // pitch of ac
+	
+	float x_wrl;
+	float y_wrl;
+	float z_wrl;
+	
+	conversion( this->x, this->y, this->z, // offset from plane 0,0,0
+		    phi, psi, the, // plane orientation
+		    px, py, pz,  // plane pos
+		    x_wrl, y_wrl, z_wrl // result
+		    );
+	
+	loc.x = x_wrl;
+	loc.y = y_wrl;
+	loc.z = z_wrl;
+	loc.pitch   = the; // Do we set those?
+	loc.heading = psi;
+	loc.roll    = phi;
+	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
+	//lg.xplm(  buffer );
+	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+      }
     }
   }
+  
+  void Smoker::set_pos(float x, float y, float z) {
+    this->x = x;
+    this->y = y;
+    this->z = z;
 
+    update( 0 );
+  }
 
   // Convert plane coords / opengl coords, to get a point on e.g. engine in
   // plane coords to world/opengl coords
@@ -184,8 +218,7 @@ namespace XLABEL {
     
     for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
       Smoker *s = *si;
-      s->life_time -= elapsed;
-      //s->set_pos(px, py, pz); // just attach them to plane
+      s->update( elapsed );
     }
     
     return -1;

@@ -38,6 +38,10 @@ namespace XLABEL {
   extern DRefFloat dr_pos_x;
   extern DRefFloat dr_pos_y;
   extern DRefFloat dr_pos_z;
+  extern DRefFloat dr_plane_psi;
+  extern DRefFloat dr_plane_the;
+  extern DRefFloat dr_plane_phi;
+
   extern DRefDouble dr_pos_latitude;
   extern DRefDouble dr_pos_longitude;
   

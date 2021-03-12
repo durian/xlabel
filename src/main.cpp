@@ -472,14 +472,24 @@ int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
     float py = dr_pos_y.get_float();
     float pz = dr_pos_z.get_float();
     
-    Smoker *s = new Smoker();
+    Smoker* s = new Smoker();
     s->load_obj( pss_obj->path ); // copy from the global one
+    s->mode = 1;
     smokers.push_back( s );
-    
     lg.xplm( "pss_obj->instantiate();\n");
     s->instantiate();
     lg.xplm( "pss_obj->set_pos();\n");
-    s->set_pos( px, py, pz );
+    s->set_pos( -4, 1, 0 ); // left wing, 1m up
+    lg.xplm( "pss_obj->set_pos() ready;\n");
+
+    s = new Smoker();
+    s->load_obj( pss_obj->path ); // copy from the global one
+    s->mode = 1;
+    smokers.push_back( s );
+    lg.xplm( "pss_obj->instantiate();\n");
+    s->instantiate();
+    lg.xplm( "pss_obj->set_pos();\n");
+    s->set_pos( 4, 1, 0 ); // right wing, 1m up
     lg.xplm( "pss_obj->set_pos() ready;\n");
   }
   
