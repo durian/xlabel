@@ -51,6 +51,7 @@ DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 
 std::vector<poi> pois;
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
+double total_dist_moved = 0.0;
 
 // ----
 
@@ -280,8 +281,17 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   // that are really far away close to the plane.
   // We need to use lat/lon for this.
 
-  auto max_shown = 12;
-  for ( auto& poi : pois) {
+  auto max_shown = 28;
+  /*
+  poi p{uplat, uplon, 0, 0, "", px, py, pz }; 
+  std::partial_sort( pois.begin(), pois.begin() + max_shown, pois.end(),
+		     [p](const poi& lhs, const poi& rhs) {
+		       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
+		     }
+		     );
+  */
+  
+  for ( auto& poi : pois) { // break when max_shown are displayed
     
     double plat = poi.lat; //dr_pos_latitude.get_double();
     double plon = poi.lon; //dr_pos_longitude.get_double();
@@ -342,12 +352,12 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
       int indent = max_shown % 3;
       if ( dist > 5000 ) {
-	final_y = screen_h - 34 - (24 * indent); // TEST
+	//final_y = screen_h - 34 - (24 * indent); // TEST, puts them on top line. Disabled.
       }
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
       make_dist_str( dist, dist_buf, units );
-      sprintf( buffer, "%s | %s", poi.name.c_str(), dist_buf );
+      sprintf( buffer, "%s | %s", poi.name.c_str(), dist_buf ); // POI | 10 nm 
 
       int len = strlen(buffer);
       
@@ -526,7 +536,7 @@ int toggle_units_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, vo
 PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   strcpy(outName, "X-Label");
   strcpy(outSig, "durian.xlabel");
-  strcpy(outDesc, "Plugin to label AI aircraft.");
+  strcpy(outDesc, "Plugin to label AI aircraft and POIs.");
 
   XPLMEnableFeature("XPLM_USE_NATIVE_PATHS", 1);  
   XPLMEnableFeature("XPLM_USE_NATIVE_WIDGET_WINDOWS", 1);
@@ -548,9 +558,9 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   lg.xplm( "ai = "+std::to_string(ai)+"\n" );
   bool res = get_tcas_positions();
   for ( auto i = 0; i < ai; i++ ) {
-    float lx  = static_cast<double>(dr_tcas_pos_x.get_memory(i)); // floats
-    float lz  = static_cast<double>(dr_tcas_pos_z.get_memory(i));
-    float ly  = static_cast<double>(dr_tcas_pos_y.get_memory(i));
+    double lx  = static_cast<double>(dr_tcas_pos_x.get_memory(i)); // floats
+    double lz  = static_cast<double>(dr_tcas_pos_z.get_memory(i));
+    double ly  = static_cast<double>(dr_tcas_pos_y.get_memory(i));
     lg.xplm( " POS AI x/y/z "+std::to_string(lx)+", "+std::to_string(ly)+", "+std::to_string(lz)+"\n" );
   }
 
@@ -621,6 +631,11 @@ PLUGIN_API int XPluginEnable(void) {
 
 PLUGIN_API void XPluginDisable(void) {
   lg.xplm( "XPluginDisable(void) to be implemented.\n" );
+  for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
+    Smoker *s = *si;
+    s->deinstantiate();
+  }
+  smokers.clear();
 }
 
 PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void * inParam) {
@@ -695,22 +710,67 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   double elapsed = inElapsedSinceLastCall;
 
   if ( ! show_ap_label ) {
-    return 10;
+    return 1; // Note, 1 sec
   }
+
+  // instead of time, calc distance, and every x km moved we resort.
   
   double plat = dr_pos_latitude.get_double();
   double plon = dr_pos_longitude.get_double();
+
+  double dist_moved = dist_latlon(plat, plon, plane_prev_lat, plane_prev_lon);
+  total_dist_moved += dist_moved;
+  plane_prev_lat = plat;
+  plane_prev_lon = plon;
+  if ( total_dist_moved < 2000.0 ) { // 2 km
+    return 1; // Note, 1 sec
+  }
+
+  // We moved, so recalculate
+  total_dist_moved = 0.0;
+  lg.xplm( "Moved 2 km, resorting.\n" );
+  
   float px = dr_pos_x.get_float();
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();
 
-  poi p{plat, plon, 0, 0, "", 0, 0, 0 }; // hmmm
+  poi p{plat, plon, 0, 0, "", 0, 0, 0 };
+  auto current_elem = 1;
+
+  // 8, 28, 12
+  //        i
+  //    j
+  // selection sort, https://www.softwaretestinghelp.com/sorting-techniques-in-cpp/
+  /*
+  for( int i = current_elem; i < pois.size(); i++ ) { // loop is full pass, maybe do only curr_elem?
+    poi pi = pois[i];
+    auto dist_to_pi = dist_latlon(pi.lat, pi.lon, plat, plon); // cache these?
+    for( int j = 0; j < i; j++ ) {
+      poi pj = pois[j];
+      auto dist_to_pj = dist_latlon(pj.lat, pj.lon, plat, plon);
+      if ( dist_to_pi < dist_to_pj ) {
+	p = pois[i];
+	pois[i] = pois[j];
+	pois[j] = p;
+      }
+    }
+  }
+  */
+  int max_shown = 28;
+  std::partial_sort( pois.begin(), pois.begin() + max_shown, pois.end(),
+		     [p](const poi& lhs, const poi& rhs) {
+		       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
+		     }
+		     );
+
+  /*
   std::sort( begin(pois),
 	     end(pois),
 	     [p](const poi& lhs, const poi& rhs) {
 	       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
 	     }
 	     );
+  */
   /*
   int c = 10;
   for ( auto& poi : pois) {
@@ -727,7 +787,7 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   }
   */
   
-  return 10; //XDROP_INTERVAL; // PJB FIXME TODO once a second?
+  return 1; // 1 sec again...
 }
 
 // ----

@@ -50,6 +50,9 @@ namespace XLABEL {
   extern DRefInt dr_screen_width;
   extern DRefInt dr_screen_height;
 
+  extern double plane_prev_lat;
+  extern double plane_prev_lon;
+  
   extern Smoker *pss_obj;
   extern std::vector<Smoker*> smokers;
   

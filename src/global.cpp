@@ -65,6 +65,9 @@ namespace XLABEL {
   DRefInt dr_screen_width{"sim/graphics/view/window_width"};
   DRefInt dr_screen_height{"sim/graphics/view/window_height"};
 
+  double plane_prev_lat = 0.0; // Yes, I know, real coords, but in the ocean.
+  double plane_prev_lon = 0.0;
+  
   Smoker *pss_obj  = nullptr;
   std::vector<Smoker*> smokers;
   
@@ -245,8 +248,12 @@ namespace XLABEL {
 	}
       }
     } // while
-	
-    return true;      
+    
+    sprintf( buffer, "Read POIs %i\n", poi_counter );
+    lg.xplm( buffer );
+    
+    return true;
+    
   }
 
   // dist, speed, alt
