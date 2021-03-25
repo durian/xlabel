@@ -67,6 +67,8 @@ namespace XLABEL {
 
   double plane_prev_lat = 0.0; // Yes, I know, real coords, but in the ocean.
   double plane_prev_lon = 0.0;
+
+  int max_shown = 28;
   
   Smoker *pss_obj  = nullptr;
   std::vector<Smoker*> smokers;

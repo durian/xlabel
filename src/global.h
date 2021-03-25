@@ -52,6 +52,8 @@ namespace XLABEL {
 
   extern double plane_prev_lat;
   extern double plane_prev_lon;
+
+  extern int max_shown;
   
   extern Smoker *pss_obj;
   extern std::vector<Smoker*> smokers;

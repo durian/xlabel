@@ -281,7 +281,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   // that are really far away close to the plane.
   // We need to use lat/lon for this.
 
-  auto max_shown = 28;
+  auto shown_counter = max_shown;
   /*
   poi p{uplat, uplon, 0, 0, "", px, py, pz }; 
   std::partial_sort( pois.begin(), pois.begin() + max_shown, pois.end(),
@@ -350,7 +350,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       
       float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
-      int indent = max_shown % 3;
+      int indent = shown_counter % 3;
       if ( dist > 5000 ) {
 	//final_y = screen_h - 34 - (24 * indent); // TEST, puts them on top line. Disabled.
       }
@@ -399,7 +399,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       
     }
     
-    if ( --max_shown <= 0 ) {
+    if ( --shown_counter <= 0 ) {
       break;
     }
     
@@ -430,7 +430,7 @@ static void smoke_airports() {
   char alt_buf[32];
   char spd_buf[32];
 
-  auto max_shown = 12;
+  auto shown_counter = 12;
   for ( auto& poi : pois) {
     
     double plat = poi.lat; //dr_pos_latitude.get_double();
@@ -465,7 +465,7 @@ static void smoke_airports() {
     s->set_pos( poi_x, poi_y, poi_z );
     lg.xplm( "pss_obj->set_pos() ready;\n");
     
-    if ( --max_shown <= 0 ) {
+    if ( --shown_counter <= 0 ) {
       break;
     }
     
@@ -756,7 +756,6 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
     }
   }
   */
-  int max_shown = 28;
   std::partial_sort( pois.begin(), pois.begin() + max_shown, pois.end(),
 		     [p](const poi& lhs, const poi& rhs) {
 		       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
