@@ -19,6 +19,7 @@
 #include <random>
 #include "cmath"
 
+#include "defs.h"
 #include "Log.h"
 #include "Smoker.h"
 #include "dr.h"
