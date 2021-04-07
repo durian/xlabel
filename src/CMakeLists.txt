@@ -62,7 +62,7 @@ add_compile_options(-fvisibility=hidden)
 # Enable stricter warnings and then disable some we are not interested in.
 #add_compile_options(-Wall -Wpedantic -Wshadow -Wfloat-equal -Wextra)
 add_compile_options(-Wno-unused)
-add_compile_options(-Wno-format-overflow)
+#add_compile_options(-Wno-format-overflow)
 
 # Always use position-independent code and highest optimization level (FPS!).
 add_compile_options(-O3)
@@ -74,6 +74,8 @@ list(APPEND XLABEL_SRCS
   Log.cpp
   Smoker.cpp
   dr.cpp
+  #  geohash.cpp
+  ageohash.cpp
   ) 
 
 add_library(XLABEL SHARED ${XLABEL_SRCS})
