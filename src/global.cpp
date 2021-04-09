@@ -315,7 +315,7 @@ namespace XLABEL {
       // Mtorp
       geohash::encode( 56.33826088, 12.89524555, i, out);
       lg.xplm( "GEOHASH: " +std::to_string(i)+ " " + out + "\n" );
-      geohash::DecodedHash foo = geohash::decode( out );
+      geohash::decoded_latlon foo = geohash::decode( out );
       lg.xplm( "GEOHASH: " + std::to_string(i)+ " " +
 	       std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + "\n" );
       lg.xplm( "GEOHASH: " + std::to_string(i)+ " " +
@@ -323,7 +323,7 @@ namespace XLABEL {
     }
   }
   void decode_test() {
-    geohash::DecodedHash foo = geohash::decode( "tuvz4p141zc1" ); //"u33w4wpy" );
+    geohash::decoded_latlon foo = geohash::decode( "tuvz4p141zc1" ); //"u33w4wpy" );
     lg.xplm( "GEOHASH: " + std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + "\n" );
     lg.xplm( "GEOHASH: " + std::to_string(foo.latitude_err) + " " + std::to_string(foo.longitude_err) + "\n" );
 
@@ -341,11 +341,11 @@ namespace XLABEL {
   }
   void neighbour_test() {
     int dir[2] = {1, 0};
-    std::string nb = geohash::neighbor("s1", dir);
+    std::string nb = geohash::neighbour("s1", dir);
     lg.xplm( "GEOHASH [1, 0]: s1 " + nb + "\n" );
     dir[0] = 0;
     dir[1] = 1;
-    nb = geohash::neighbor("s1", dir);
+    nb = geohash::neighbour("s1", dir);
     lg.xplm( "GEOHASH [0, 1]: s1 " + nb + "\n" );
   }
 

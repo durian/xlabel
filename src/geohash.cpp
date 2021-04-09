@@ -8,43 +8,14 @@
 
 #include "geohash.h"
 
-
 namespace geohash {
 
 // Static array of 0-9, a-z
-const char base32_codes[] = {
-  '0',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  'b',
-  'c',
-  'd',
-  'e',
-  'f',
-  'g',
-  'h',
-  'j',
-  'k',
-  'm',
-  'n',
-  'p',
-  'q',
-  'r',
-  's',
-  't',
-  'u',
-  'v',
-  'w',
-  'x',
-  'y',
-  'z'
+const char base32_chars[] = {
+  '0',  '1',  '2',  '3',  '4',  '5',  '6',  '7',
+  '8',  '9',  'b',  'c',  'd',  'e',  'f',  'g',
+  'h',  'j',  'k',  'm',  'n',  'p',  'q',  'r',
+  's',  't',  'u',  'v',  'w',  'x',  'y',  'z'
 };
 
 // Build a map of characters -> index position from the above array
@@ -56,7 +27,7 @@ const std::map<char, int> build_base32_indexes() {
   std::map<char, int> output;
   
   int i = 0;
-  for ( char c : base32_codes ) {
+  for ( char c : base32_chars ) {
     output.insert( std::pair<char, int>(c, i) );
     ++i;
   }
@@ -64,18 +35,18 @@ const std::map<char, int> build_base32_indexes() {
 }
 
 // Convert the index position to the character in the array
-char base32_codes_value_of(int index) {
-    return base32_codes[index];
+char base32_chars_value_of(int index) {
+    return base32_chars[index];
 }
 
 // Convert the character to the index position in the array
-int base32_codes_index_of(char c) {
+int base32_chars_index_of(char c) {
     return base32_indexes.find(c)->second;
 }
 
-void encode(const double latitude, const double longitude, unsigned long precision, string_type & output) {
-  // DecodedBBox for the lat/lon + errors
-  DecodedBBox bbox;
+void encode(const double latitude, const double longitude, unsigned long precision, std::string & output) {
+  // bounding_box for the lat/lon + errors
+  bounding_box bbox;
   bbox.maxlat = 90;
   bbox.maxlon = 180;
   bbox.minlat = -90;
@@ -86,7 +57,7 @@ void encode(const double latitude, const double longitude, unsigned long precisi
   int    hash_index = 0;
   
   // Pre-Allocate the hash string
-  output = string_type(precision, ' ');
+  output = std::string(precision, ' ');
   unsigned int output_length = 0;
   
   while(output_length < precision) {
@@ -115,7 +86,7 @@ void encode(const double latitude, const double longitude, unsigned long precisi
     if (5 == num_bits) {
       // Append the character to the pre-allocated string
       // This gives us roughly a 2x speed boost
-      output[output_length] = base32_codes[hash_index];
+      output[output_length] = base32_chars[hash_index];
       
       output_length++;
       num_bits   = 0;
@@ -126,38 +97,38 @@ void encode(const double latitude, const double longitude, unsigned long precisi
   
 // Encode a pair of latitude and longitude into geohash
 // All Precisions from [1 to 9] (inclusive)
-void encode_all_precisions(const double latitude, const double longitude, std::vector<string_type> & output) {
+void encode_all_precisions(const double latitude, const double longitude, std::vector<std::string> & output) {
   encode_range_precisions(latitude, longitude, 1, 9, output);
 }
 
 // Encode a pair of latitude and longitude into geohash
 // All Precisions from [min to max] (inclusive)
 void encode_range_precisions(const double latitude, const double longitude, const size_t min, const size_t max,
-			     std::vector<string_type> & output) {
+			     std::vector<std::string> & output) {
   const size_t num_precisions = max - min + 1;
   output.resize(num_precisions);
 
-  string_type buffer;
+  std::string buffer;
   encode(latitude, longitude, max, buffer);
   
   // Set the "end" value
   output[num_precisions - 1] = buffer;
   
   for(int i = num_precisions - 2; i >= 0; --i) {
-    const string_type & last = output[i+1];
+    const std::string & last = output[i+1];
     output[i] = last.substr(0, last.length() -1);
   }
 }
 
-DecodedBBox decode_bbox(const string_type & _hash_string) {
+bounding_box decode_bbox(const std::string & _hash_string) {
   // Copy of the string down-cased
-  string_type hash_string(_hash_string);
+  std::string hash_string(_hash_string);
   std::transform( _hash_string.begin(),
 		  _hash_string.end(),
 		  hash_string.begin(),
 		  ::tolower );
   
-  DecodedBBox output;
+  bounding_box output;
   output.maxlat =   90;
   output.maxlon =  180;
   output.minlat =  -90;
@@ -166,7 +137,7 @@ DecodedBBox decode_bbox(const string_type & _hash_string) {
   bool islon = true;
   
   for(int i = 0, max = hash_string.length(); i < max; i++) {
-    int char_index = base32_codes_index_of(hash_string[i]);
+    int char_index = base32_chars_index_of(hash_string[i]);
     
     for (int bits = 4; bits >= 0; --bits) {
       int bit = (char_index >> bits) & 1;
@@ -191,9 +162,9 @@ DecodedBBox decode_bbox(const string_type & _hash_string) {
   return output;
 }
 
-DecodedHash decode(const string_type & hash_string) {
-  DecodedBBox bbox = decode_bbox(hash_string);
-  DecodedHash output;
+decoded_latlon decode(const std::string & hash_string) {
+  bounding_box bbox = decode_bbox(hash_string);
+  decoded_latlon output;
   output.latitude      = (bbox.minlat + bbox.maxlat) / 2;
   output.longitude     = (bbox.minlon + bbox.maxlon) / 2;
   output.latitude_err  = bbox.maxlat - output.latitude;
@@ -201,13 +172,13 @@ DecodedHash decode(const string_type & hash_string) {
   return output;
 }
 
-string_type neighbor(const string_type & hash_string, const int direction []) {
-  // Adjust the DecodedHash for the direction of the neighbors
-  DecodedHash lonlat = decode(hash_string);
+std::string neighbour(const std::string & hash_string, const int direction []) {
+  // Adjust the decoded_latlon for the direction of the neighbours
+  decoded_latlon lonlat = decode(hash_string);
   lonlat.latitude   += direction[0] * lonlat.latitude_err * 2;
   lonlat.longitude  += direction[1] * lonlat.longitude_err * 2;
   
-  string_type output;
+  std::string output;
   encode( lonlat.latitude,
 	  lonlat.longitude,
 	  hash_string.length(),

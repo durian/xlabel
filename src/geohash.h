@@ -4,16 +4,13 @@
 #include <string>
 #include <vector>
 
-namespace geohash
-{
-typedef std::string string_type;
-typedef std::vector<string_type> string_vector;
-
-struct DecodedBBox {
+namespace geohash {
+  
+struct bounding_box {
     double minlat, minlon, maxlat, maxlon;
 };
 
-struct DecodedHash {
+struct decoded_latlon {
     double latitude;
     double longitude;
 
@@ -22,7 +19,7 @@ struct DecodedHash {
 };
 
 // Encode a pair of latitude and longitude into geohash
-void encode(const double latitude, const double longitude, const unsigned long precision, string_type & output);
+void encode(const double latitude, const double longitude, const unsigned long precision, std::string & output);
 
 // Encode a pair of latitude and longitude into geohash
 // All Precisions from [1 to 9] (inclusive)
@@ -38,20 +35,20 @@ void encode_range_precisions(
     const double longitude,
     const size_t min,
     const size_t max,
-    std::vector<string_type> & output);
+    std::vector<std::string> & output);
 
 
 // Decode a hash string into pair of latitude and longitude
-DecodedHash decode(const std::string & hash_string);
+decoded_latlon decode(const std::string & hash_string);
 
 // Decode hashstring into a bound box matches it
-DecodedBBox decode_bbox(const std::string & hash_string);
+bounding_box decode_bbox(const std::string & hash_string);
 
-// Find neighbor of a geohash string in certain direction.
+// Find neighbour of a geohash string in certain direction.
 // Direction is a two-element array:
 // Ex: [ 1, 0] == north
 // Ex: [-1,-1] == southwest
-std::string neighbor(const std::string & hash_string, const int direction []);
+std::string neighbour(const std::string & hash_string, const int direction []);
 
 } // end namespace geohash
 

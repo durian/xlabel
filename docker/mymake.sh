@@ -70,6 +70,7 @@ else
 fi
 
 echo -e "\n\n\n"
+find ../bin -name 'xlabel.xpl' -ls
 echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11/Resources/plugins/${PLGBASE}/$DIR
 echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11b/Resources/plugins/${PLGBASE}/$DIR
 echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11c/Resources/plugins/${PLGBASE}/$DIR
