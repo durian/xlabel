@@ -23,6 +23,7 @@
 #include "Log.h"
 #include "Smoker.h"
 #include "dr.h"
+#include "geohash.h"
 #include "global.h"
 
 namespace XLABEL {
@@ -242,7 +243,9 @@ namespace XLABEL {
 	  float alt = std::stof(bits[2]);
 	  int   dst = int(std::stoi(bits[3]));
 	  std::string lbl = bits[4];
-	  pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1 } );
+	  std::string geohash;
+	  geohash::encode( lat, lon, 6, geohash );
+	  pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1, geohash } );
 	  ++poi_counter;
 	  //sprintf( buffer, "Added POI %i: %.4f, %.4f, %.4f, %i, %s\n", poi_counter, lat, lon, alt, dst, lbl.c_str() );
 	  //lg.xplm( buffer );
@@ -298,5 +301,52 @@ namespace XLABEL {
       sprintf( buffer, "%i ft", ft );
     }
   }
-  
+
+  // More tests
+  void encode_test() {
+    std::string out;
+    geohash::encode( 53.12, 13.48, 8, out);
+    lg.xplm( "GEOHASH: " + out + "\n" );
+    geohash::encode( 10, 0.1, 8, out); // s1b0fk2y
+    lg.xplm( "GEOHASH: " + out + "\n" );
+    geohash::encode( 10, -0.1, 8, out);// eczbvsrn
+    lg.xplm( "GEOHASH: " + out + "\n" );
+    for ( auto i = 1; i <= 12; i++ ) {
+      // Mtorp
+      geohash::encode( 56.33826088, 12.89524555, i, out);
+      lg.xplm( "GEOHASH: " +std::to_string(i)+ " " + out + "\n" );
+      geohash::DecodedHash foo = geohash::decode( out );
+      lg.xplm( "GEOHASH: " + std::to_string(i)+ " " +
+	       std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + "\n" );
+      lg.xplm( "GEOHASH: " + std::to_string(i)+ " " +
+	       std::to_string(foo.latitude_err) + " " + std::to_string(foo.longitude_err) + "\n" );
+    }
+  }
+  void decode_test() {
+    geohash::DecodedHash foo = geohash::decode( "tuvz4p141zc1" ); //"u33w4wpy" );
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + "\n" );
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude_err) + " " + std::to_string(foo.longitude_err) + "\n" );
+
+    foo = geohash::decode( "tuvz4p141zc" ); 
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + "\n" );
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude_err) + " " + std::to_string(foo.longitude_err) + "\n" );
+
+    foo = geohash::decode( "tuvz4p141z" ); 
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + "\n" );
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude_err) + " " + std::to_string(foo.longitude_err) + "\n" );
+
+    foo = geohash::decode( "tuvz4p141" ); 
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + "\n" );
+    lg.xplm( "GEOHASH: " + std::to_string(foo.latitude_err) + " " + std::to_string(foo.longitude_err) + "\n" );
+  }
+  void neighbour_test() {
+    int dir[2] = {1, 0};
+    std::string nb = geohash::neighbor("s1", dir);
+    lg.xplm( "GEOHASH [1, 0]: s1 " + nb + "\n" );
+    dir[0] = 0;
+    dir[1] = 1;
+    nb = geohash::neighbor("s1", dir);
+    lg.xplm( "GEOHASH [0, 1]: s1 " + nb + "\n" );
+  }
+
 }

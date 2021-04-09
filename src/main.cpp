@@ -36,6 +36,7 @@
 #include "Log.h"
 #include "Smoker.h"
 #include "global.h"
+#include "geohash.h"
 
 using namespace XLABEL;
 
@@ -542,6 +543,10 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
 
   XPLMEnableFeature("XPLM_USE_NATIVE_PATHS", 1);  
   XPLMEnableFeature("XPLM_USE_NATIVE_WIDGET_WINDOWS", 1);
+
+  encode_test();
+  decode_test();
+  neighbour_test();
   
   char filebase[255];
   //XPLMGetSystemPath(filebase); // Locate the X-System directory
@@ -743,8 +748,11 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   double plat = dr_pos_latitude.get_double();
   double plon = dr_pos_longitude.get_double();
 
-  // Instead of dist moved, we calc dist from last point saved (image we fly in a circle)
-  
+  std::string gh;
+  geohash::encode( plat, plon, 8, gh );
+  lg.xplm( "GEOHASH: " + gh + "\n" );
+
+  // Calc dist from last point saved
   double dist_moved = dist_latlon(plat, plon, plane_prev_lat, plane_prev_lon);
   if ( dist_moved < 2000.0 ) { // 2 km
     return 1; // Note, 1 sec
@@ -761,7 +769,7 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();
 
-  poi p{plat, plon, 0, 0, "", 0, 0, 0 };
+  poi p{plat, plon, 0, 0, "", 0, 0, 0, 1, ""};
   auto current_elem = 1;
 
   // selection sort, https://www.softwaretestinghelp.com/sorting-techniques-in-cpp/ ?
@@ -789,7 +797,8 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
     float dz = pz - poi.z;
     float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
 
-    lg.xplm( "Closest to: "+poi.name+", "+std::to_string(latlon_dist)+", "+std::to_string(dist)+"\n" );
+    lg.xplm( "Closest to: "+poi.name+", "+std::to_string(latlon_dist)+", "+std::to_string(dist)+
+	     " "+poi.geohash + "\n" );
     if ( --c <= 0 ) {
       break;
     }
@@ -800,4 +809,3 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 }
 
 // ----
-

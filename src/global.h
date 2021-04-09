@@ -84,6 +84,7 @@ namespace XLABEL {
     double y;
     double z;
     int    update;
+    std::string geohash;
   };
   float dist_between(const poi& lhs, const poi& rhs);
   double dist_latlon(double lat0, double lon0, double lat1, double lon1);
@@ -92,5 +93,9 @@ namespace XLABEL {
   void make_dist_str( float dist_m, char* buffer, int units );
   void make_spd_str( float v_msc, char* buffer, int units );
   void make_alt_str( float alt_m, char* buffer, int units );
+
+  void encode_test();
+  void decode_test();
+  void neighbour_test();
 }
 #endif

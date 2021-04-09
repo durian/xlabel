@@ -74,7 +74,7 @@ list(APPEND XLABEL_SRCS
   Log.cpp
   Smoker.cpp
   dr.cpp
-  #  geohash.cpp
+  geohash.cpp
   ) 
 
 add_library(XLABEL SHARED ${XLABEL_SRCS})
