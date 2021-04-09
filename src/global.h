@@ -6,12 +6,26 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include "Smoker.h"
 #include "dr.h"
 
 // using namespace XLABEL;
 namespace XLABEL {
+
+    struct poi { 
+    double lat;
+    double lon;
+    float alt;
+    int   dst; // have to be closer than n meter distance
+    std::string name;
+    double x;
+    double y;
+    double z;
+    int    update;
+    std::string geohash;
+  };
 
   extern XPLMCommandRef toggle_ac_label_cmd;
   extern XPLMCommandRef toggle_ap_label_cmd;
@@ -54,6 +68,8 @@ namespace XLABEL {
   extern double plane_prev_lon;
 
   extern int max_shown;
+
+  extern std::map< std::string, std::vector<poi> > poimap;
   
   extern Smoker *pss_obj;
   extern std::vector<Smoker*> smokers;
@@ -74,18 +90,6 @@ namespace XLABEL {
   void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
   void poi_to_local(double lat, double lon, double& x, double& y, double& z);
   size_t listify(const std::string& s, std::vector<std::string>& v);
-  struct poi { 
-    double lat;
-    double lon;
-    float alt;
-    int   dst; // have to be closer than n meter distance
-    std::string name;
-    double x;
-    double y;
-    double z;
-    int    update;
-    std::string geohash;
-  };
   float dist_between(const poi& lhs, const poi& rhs);
   double dist_latlon(double lat0, double lon0, double lat1, double lon1);
   bool read_pois( const std::string& filename, std::vector<poi>& pois );

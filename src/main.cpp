@@ -765,6 +765,13 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   std::string gh;
   geohash::encode( plat, plon, 8, gh );
   lg.xplm( "GEOHASH: " + gh + "\n" );
+  /*
+  std::string prefix = gh.substr(0, 3);
+  std::vector<poi> gh_pois = poimap[prefix];
+  for ( auto& gh_poi : gh_pois) {
+    lg.xplm( "poimap: "+gh_poi.name+", "+gh_poi.geohash + "\n" );
+  }
+  */
 
   float px = dr_pos_x.get_float();
   float py = dr_pos_y.get_float();

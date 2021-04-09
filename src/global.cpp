@@ -5,6 +5,7 @@
 #include "XPLMInstance.h"
 
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -71,6 +72,8 @@ namespace XLABEL {
   double plane_prev_lon = 0.0;
 
   int max_shown = 28;
+
+  std::map< std::string, std::vector<poi> > poimap;
   
   Smoker *pss_obj  = nullptr;
   std::vector<Smoker*> smokers;
@@ -246,6 +249,10 @@ namespace XLABEL {
 	  std::string geohash;
 	  geohash::encode( lat, lon, 6, geohash );
 	  pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1, geohash } );
+
+	  std::string prefix = geohash.substr(0, 3);
+	  poimap[prefix].push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1, geohash } );
+	  
 	  ++poi_counter;
 	  //sprintf( buffer, "Added POI %i: %.4f, %.4f, %.4f, %i, %s\n", poi_counter, lat, lon, alt, dst, lbl.c_str() );
 	  //lg.xplm( buffer );
@@ -257,9 +264,12 @@ namespace XLABEL {
     
     sprintf( buffer, "Read POIs %i\n", poi_counter );
     lg.xplm( buffer );
+
+    for ( auto const &x : poimap ) {
+      lg.xplm( "POIMAP " + x.first + ": " + std::to_string((x.second).size()) + "\n" );
+    }
     
     return true;
-    
   }
 
   // dist, speed, alt
