@@ -748,9 +748,6 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
   double plat = dr_pos_latitude.get_double();
   double plon = dr_pos_longitude.get_double();
 
-  std::string gh;
-  geohash::encode( plat, plon, 8, gh );
-  lg.xplm( "GEOHASH: " + gh + "\n" );
 
   // Calc dist from last point saved
   double dist_moved = dist_latlon(plat, plon, plane_prev_lat, plane_prev_lon);
@@ -764,7 +761,11 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 
   // We moved, so recalculate
   lg.xplm( "Moved 2 km, resorting.\n" );
-  
+
+  std::string gh;
+  geohash::encode( plat, plon, 8, gh );
+  lg.xplm( "GEOHASH: " + gh + "\n" );
+
   float px = dr_pos_x.get_float();
   float py = dr_pos_y.get_float();
   float pz = dr_pos_z.get_float();

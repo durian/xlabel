@@ -340,13 +340,21 @@ namespace XLABEL {
     lg.xplm( "GEOHASH: " + std::to_string(foo.latitude_err) + " " + std::to_string(foo.longitude_err) + "\n" );
   }
   void neighbour_test() {
-    int dir[2] = {1, 0};
-    std::string nb = geohash::neighbour("s1", dir);
-    lg.xplm( "GEOHASH [1, 0]: s1 " + nb + "\n" );
-    dir[0] = 0;
-    dir[1] = 1;
-    nb = geohash::neighbour("s1", dir);
-    lg.xplm( "GEOHASH [0, 1]: s1 " + nb + "\n" );
+    int dir[2] = {0, 0};
+    std::string centre = "u610";
+    geohash::decoded_latlon foo = geohash::decode( centre ); 
+    std::cerr << foo.latitude << " " << foo.longitude << " NEIGHB START\n";
+    for ( int i = -1; i < 2; i++ ) {
+      for ( int j = -1; j < 2; j++ ) {
+	dir[0] = i;
+	dir[1] = j;
+	std::string nb = geohash::neighbour( centre, dir);
+	lg.xplm( "GEOHASH "+centre+", ["+std::to_string(i)+", "+std::to_string(j)+"]: " + nb + "\n" );
+	geohash::decoded_latlon foo = geohash::decode( nb ); 
+	//lg.xplm( " " + std::to_string(foo.latitude) + " " + std::to_string(foo.longitude) + " NEIGHB\n" );
+	std::cerr << foo.latitude << " " << foo.longitude << " " << nb << " NEIGHB\n";
+      } // j
+    } // i
   }
 
 }

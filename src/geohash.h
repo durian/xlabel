@@ -19,37 +19,29 @@ struct decoded_latlon {
 };
 
 // Encode a pair of latitude and longitude into geohash
-void encode(const double latitude, const double longitude, const unsigned long precision, std::string & output);
+void encode( const double latitude, const double longitude, const unsigned long precision, std::string& output );
 
 // Encode a pair of latitude and longitude into geohash
 // All Precisions from [1 to 9] (inclusive)
-void encode_all_precisions(
-    const double latitude,
-    const double longitude,
-    std::vector<std::string> & output);
+void encode_all_precisions( const double latitude, const double longitude, std::vector<std::string>& output );
 
-// Encode a pair of latitude and longitude into geohash
+// Encode a pair of latitude and longitude into a geohash
 // All Precisions from [min to max] (inclusive)
-void encode_range_precisions(
-    const double latitude,
-    const double longitude,
-    const size_t min,
-    const size_t max,
-    std::vector<std::string> & output);
-
+void encode_range_precisions( const double latitude, const double longitude,
+			      const size_t min, const size_t max,
+			      std::vector<std::string>& output );
 
 // Decode a hash string into pair of latitude and longitude
-decoded_latlon decode(const std::string & hash_string);
+decoded_latlon decode( const std::string& hash_string );
 
 // Decode hashstring into a bound box matches it
-bounding_box decode_bbox(const std::string & hash_string);
+bounding_box decode_bbox( const std::string& hash_string );
 
 // Find neighbour of a geohash string in certain direction.
-// Direction is a two-element array:
-// Ex: [ 1, 0] == north
-// Ex: [-1,-1] == southwest
-std::string neighbour(const std::string & hash_string, const int direction []);
+// [ 1, 0] == north
+// [-1,-1] == southwest, etc
+std::string neighbour( const std::string& hash_string, const int direction[] );
 
-} // end namespace geohash
+} // namespace geohash
 
 #endif 

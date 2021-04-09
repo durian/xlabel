@@ -44,7 +44,7 @@ int base32_chars_index_of(char c) {
     return base32_indexes.find(c)->second;
 }
 
-void encode(const double latitude, const double longitude, unsigned long precision, std::string & output) {
+void encode( const double latitude, const double longitude, unsigned long precision, std::string& output ) {
   // bounding_box for the lat/lon + errors
   bounding_box bbox;
   bbox.maxlat = 90;
@@ -56,14 +56,14 @@ void encode(const double latitude, const double longitude, unsigned long precisi
   int    num_bits   = 0;
   int    hash_index = 0;
   
-  // Pre-Allocate the hash string
-  output = std::string(precision, ' ');
+  // Pre-allocate the hash string
+  output = std::string( precision, ' ' );
   unsigned int output_length = 0;
   
-  while(output_length < precision) {
-    if (islon) {
+  while ( output_length < precision ) {
+    if ( islon ) {
       mid = (bbox.maxlon + bbox.minlon) / 2;
-      if(longitude > mid) {
+      if ( longitude > mid ) {
 	hash_index = (hash_index << 1) + 1;
 	bbox.minlon=mid;
       } else {
@@ -72,7 +72,7 @@ void encode(const double latitude, const double longitude, unsigned long precisi
       }
     } else {
       mid = (bbox.maxlat + bbox.minlat) / 2;
-      if(latitude > mid ) {
+      if ( latitude > mid ) {
 	hash_index = (hash_index << 1) + 1;
 	bbox.minlat = mid;
       } else {
@@ -83,7 +83,7 @@ void encode(const double latitude, const double longitude, unsigned long precisi
     islon = !islon;
     
     ++num_bits;
-    if (5 == num_bits) {
+    if ( num_bits == 5 ) {
       // Append the character to the pre-allocated string
       // This gives us roughly a 2x speed boost
       output[output_length] = base32_chars[hash_index];
@@ -95,32 +95,32 @@ void encode(const double latitude, const double longitude, unsigned long precisi
   }
 }
   
-// Encode a pair of latitude and longitude into geohash
-// All Precisions from [1 to 9] (inclusive)
-void encode_all_precisions(const double latitude, const double longitude, std::vector<std::string> & output) {
-  encode_range_precisions(latitude, longitude, 1, 9, output);
+// Encode a pair of latitude and longitude into a geohash
+// All precisions from [1 to 9] (inclusive)
+void encode_all_precisions( const double latitude, const double longitude, std::vector<std::string> & output ) {
+  encode_range_precisions( latitude, longitude, 1, 9, output );
 }
 
 // Encode a pair of latitude and longitude into geohash
 // All Precisions from [min to max] (inclusive)
-void encode_range_precisions(const double latitude, const double longitude, const size_t min, const size_t max,
-			     std::vector<std::string> & output) {
+void encode_range_precisions( const double latitude, const double longitude, const size_t min, const size_t max,
+			     std::vector<std::string> & output ) {
   const size_t num_precisions = max - min + 1;
-  output.resize(num_precisions);
+  output.resize( num_precisions );
 
   std::string buffer;
-  encode(latitude, longitude, max, buffer);
+  encode( latitude, longitude, max, buffer );
   
   // Set the "end" value
   output[num_precisions - 1] = buffer;
   
-  for(int i = num_precisions - 2; i >= 0; --i) {
+  for ( int i = num_precisions - 2; i >= 0; --i ) {
     const std::string & last = output[i+1];
-    output[i] = last.substr(0, last.length() -1);
+    output[i] = last.substr( 0, last.length()-1 );
   }
 }
 
-bounding_box decode_bbox(const std::string & _hash_string) {
+bounding_box decode_bbox( const std::string& _hash_string ) {
   // Copy of the string down-cased
   std::string hash_string(_hash_string);
   std::transform( _hash_string.begin(),
@@ -136,21 +136,21 @@ bounding_box decode_bbox(const std::string & _hash_string) {
   
   bool islon = true;
   
-  for(int i = 0, max = hash_string.length(); i < max; i++) {
-    int char_index = base32_chars_index_of(hash_string[i]);
+  for ( int i = 0, max = hash_string.length(); i < max; i++ ) {
+    int char_index = base32_chars_index_of( hash_string[i] );
     
-    for (int bits = 4; bits >= 0; --bits) {
+    for ( int bits = 4; bits >= 0; --bits ) {
       int bit = (char_index >> bits) & 1;
-      if (islon) {
+      if ( islon ) {
 	double mid = (output.maxlon + output.minlon) / 2;
-	if(bit == 1) {
+	if ( bit == 1 ) {
 	  output.minlon = mid;
 	} else {
 	  output.maxlon = mid;
 	}
       } else {
 	double mid = (output.maxlat + output.minlat) / 2;
-	if(bit == 1) {
+	if ( bit == 1 ) {
 	  output.minlat = mid;
 	} else {
 	  output.maxlat = mid;
@@ -162,8 +162,8 @@ bounding_box decode_bbox(const std::string & _hash_string) {
   return output;
 }
 
-decoded_latlon decode(const std::string & hash_string) {
-  bounding_box bbox = decode_bbox(hash_string);
+decoded_latlon decode( const std::string& hash_string ) {
+  bounding_box   bbox = decode_bbox(hash_string);
   decoded_latlon output;
   output.latitude      = (bbox.minlat + bbox.maxlat) / 2;
   output.longitude     = (bbox.minlon + bbox.maxlon) / 2;
@@ -172,17 +172,14 @@ decoded_latlon decode(const std::string & hash_string) {
   return output;
 }
 
-std::string neighbour(const std::string & hash_string, const int direction []) {
+std::string neighbour( const std::string& hash_string, const int direction [] ) {
   // Adjust the decoded_latlon for the direction of the neighbours
-  decoded_latlon lonlat = decode(hash_string);
+  decoded_latlon lonlat = decode( hash_string );
   lonlat.latitude   += direction[0] * lonlat.latitude_err * 2;
-  lonlat.longitude  += direction[1] * lonlat.longitude_err * 2;
+  lonlat.longitude  += direction[1] * lonlat.longitude_err * 2; // was 2, with 4 more square (?) PJB
   
   std::string output;
-  encode( lonlat.latitude,
-	  lonlat.longitude,
-	  hash_string.length(),
-	  output );
+  encode( lonlat.latitude, lonlat.longitude, hash_string.length(), output );
   return output;
 }
 
