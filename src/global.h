@@ -38,24 +38,37 @@ namespace XLABEL {
   
   extern DRefInt dr_tcas_num_acf;
   extern DRefInt dr_override_TCAS;
+  extern DRefInt dr_override_flightcontrol;
   extern DRefInt dr_acf_modeS_id;
+  // For the AI aircraft:
   extern DRefFloatArray dr_tcas_pos_x;
   extern DRefFloatArray dr_tcas_pos_y;
   extern DRefFloatArray dr_tcas_pos_z;
   extern DRefFloatArray dr_tcas_pos_ele;
+  extern DRefFloatArray dr_tcas_vel_x;
+  extern DRefFloatArray dr_tcas_vel_y;
+  extern DRefFloatArray dr_tcas_vel_z;
+  extern DRefFloatArray dr_tcas_pos_psi;
+  extern DRefFloatArray dr_tcas_pos_phi;
+  extern DRefFloatArray dr_tcas_pos_the;
   extern DRefFloatArray dr_rel_dist_mtrs;
   extern DRefFloatArray dr_ref_alt_mtrs;
   extern DRefFloatArray dr_vertical_speed;
   extern DRefFloatArray dr_V_msc;
   extern DRefIntArray   dr_tcas_modeS;
 
+  // For the user aircraft:
   extern DRefFloat dr_pos_x;
   extern DRefFloat dr_pos_y;
   extern DRefFloat dr_pos_z;
   extern DRefFloat dr_plane_psi;
   extern DRefFloat dr_plane_the;
   extern DRefFloat dr_plane_phi;
-
+  extern DRefFloat dr_vel_x;
+  extern DRefFloat dr_vel_y;
+  extern DRefFloat dr_vel_z;
+  extern DRefFloatArray dr_plane_q;
+  
   extern DRefDouble dr_pos_latitude;
   extern DRefDouble dr_pos_longitude;
   

@@ -1,5 +1,6 @@
-// Downloaded from https://developer.x-plane.com/code-sample/x-plane-11-map/
-
+//
+// Make a "mark here" function while flying?
+//
 #include "XPLMMap.h"
 #include "XPLMGraphics.h"
 #include "XPLMDisplay.h"
@@ -53,6 +54,75 @@ DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 
 std::vector<poi> pois;
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
+
+// For warp
+#define DEG_TO_RAD_2 M_PI / 360.0
+typedef struct _Eulers {
+  double psi;
+  double the;
+  double phi;
+} Eulers;
+typedef struct _Quaternion {
+  double w;
+  double x;
+  double y;
+  double z;
+} Quaternion;
+void EulersToQuaternion(Eulers ypr, Quaternion &q) {
+    double spsi = sin(ypr.psi * DEG_TO_RAD_2);
+    double sthe = sin(ypr.the * DEG_TO_RAD_2);
+    double sphi = sin(ypr.phi * DEG_TO_RAD_2);
+    double cpsi = cos(ypr.psi * DEG_TO_RAD_2);
+    double cthe = cos(ypr.the * DEG_TO_RAD_2);
+    double cphi = cos(ypr.phi * DEG_TO_RAD_2);
+
+    double qw = cphi * cthe * cpsi + sphi * sthe * spsi;
+    double qx = sphi * cthe * cpsi - cphi * sthe * spsi;
+    double qy = sphi * cthe * spsi + cphi * sthe * cpsi;
+    double qz = cphi * cthe * spsi - sphi * sthe * cpsi;
+
+    double e = sqrt(qw * qw + qx * qx + qy * qy + qz * qz);
+
+    q.w = qw / e;
+    q.x = qx / e;
+    q.y = qy / e;
+    q.z = qz / e;
+}
+#define RAD_TO_DEG 180.0 / M_PI
+double sgn(double a) {
+    if (a < 0.0) return -1.0;
+    else return 1.0;
+}
+void QuaternionToEulers(Quaternion q, Eulers &ypr) {
+    double sx = q.x * q.x;
+    double sy = q.y * q.y;
+    double sz = q.z * q.z;
+    double yz = q.y * q.z;
+    double wx = q.w * q.x;
+
+    double m00 = 1.0 - 2.0 * (sy + sz);
+    double m10 = 2.0 * (q.x * q.y + q.w * q.z);
+    double m11 = 1.0 - 2.0 * (sx + sz);
+    double m12 = 2.0 * (yz - wx);
+    double m20 = 2.0 * (q.x * q.z - q.w * q.y);
+    double m21 = 2.0 * (wx + yz);
+    double m22 = 1.0 - 2.0 * (sx + sy);
+
+    double s = -m20;
+    double c = sqrt(m00 * m00 + m10 * m10);
+
+    ypr.the = atan2(s, c) * RAD_TO_DEG;
+
+    if (c > 0.001) {
+      ypr.phi = atan2(m21, m22) * RAD_TO_DEG;
+      ypr.psi = atan2(m10, m00) * RAD_TO_DEG;
+    } else {
+      ypr.phi = 0.0;
+      ypr.psi = -sgn(s) * atan2(-m12, m11) * RAD_TO_DEG;
+    }
+}
+// end for warp
+
 
 // ----
 
@@ -166,7 +236,7 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 	
 	float box_y = final_y + 12 + 10; // We put box above
 	float box_x = final_x + 12; // We put box to right
-	XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
+	XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8); // slow?
 	XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
 	
 	// draw the label higer, and a small green line to the final_x and final_y points?
@@ -181,8 +251,8 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 			     0 /* no depth writing */
 			     );
 	glColor3f(0, 1, 0); // green
-	float half_width  = 10;
-	float half_height = 10;
+	static float half_width  = 10;
+	static float half_height = 10;
 	glBegin(GL_LINE_LOOP);
 	{
 	  // final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
@@ -409,6 +479,105 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   return 1;
 }
 
+static void warp_to_ai() {
+
+  int ai = dr_tcas_num_acf.get_int();
+  if ( ai < 2 ) {
+    return;
+  }
+  
+  bool res = get_tcas_positions();
+  int i = 1;
+  float lx1  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
+  float lz1  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
+  float ly1  = static_cast<float>(dr_tcas_pos_y.get_memory(i));
+  float ele1 = static_cast<float>(dr_tcas_pos_ele.get_memory(i));
+
+  float vx1  = static_cast<float>(dr_tcas_vel_x.get_memory(i)); // or were these doubles
+  float vz1  = static_cast<float>(dr_tcas_vel_z.get_memory(i));
+  float vy1  = static_cast<float>(dr_tcas_vel_y.get_memory(i));
+
+  float phi1 = static_cast<float>(dr_tcas_pos_phi.get_memory(i)); // or were these doubles
+  float psi1 = static_cast<float>(dr_tcas_pos_psi.get_memory(i));
+  float the1 = static_cast<float>(dr_tcas_pos_the.get_memory(i));
+
+  dr_override_flightcontrol.set_int( 1 );
+  
+  dr_pos_x.set_float( lx1 );
+  dr_pos_z.set_float( lz1 );
+  //
+  dr_pos_y.set_float( ly1 );
+
+  dr_vel_x.set_float( vx1 );
+  dr_vel_z.set_float( vz1 );
+  //
+  dr_vel_y.set_float( vy1 );
+
+  // convert AI eulers to Q
+  Eulers ypr = {0, 0, 0};
+  Quaternion q;
+  ypr.psi = psi1;
+  ypr.the = the1;
+  ypr.phi = phi1;
+  EulersToQuaternion(ypr, q); // convert back
+
+  dr_plane_q.set_float( static_cast<float>(q.w), 0 );
+  dr_plane_q.set_float( static_cast<float>(q.x), 1 );
+  dr_plane_q.set_float( static_cast<float>(q.y), 2 );
+  dr_plane_q.set_float( static_cast<float>(q.z), 3 );
+  
+  //  dr_plane_q = {static_cast<float>(q.w), static_cast<float>(q.x),
+  //  static_cast<float>(q.y), static_cast<float>(q.z)};
+  dr_plane_psi.set_float( psi1 );
+  dr_plane_phi.set_float( phi1 );
+  dr_plane_the.set_float( the1 );
+  
+  dr_override_flightcontrol.set_int( 0 );
+  
+  // move values to user aircraft (quaternions too?)
+  /*
+    DataRef<std::vector<int>> dr_override_planepath("sim/operation/override/override_planepath", ReadWrite); // ARRAY?
+    
+    DataRef<double> dr_plane_lx("sim/flightmodel/position/local_x", ReadWrite);
+    DataRef<double> dr_plane_ly("sim/flightmodel/position/local_y", ReadWrite);
+    DataRef<double> dr_plane_lz("sim/flightmodel/position/local_z", ReadWrite);
+    
+    DataRef<float> dr_plane_vx("sim/flightmodel/position/local_vx", ReadWrite);
+    DataRef<float> dr_plane_vy("sim/flightmodel/position/local_vy", ReadWrite);
+    DataRef<float> dr_plane_vz("sim/flightmodel/position/local_vz", ReadWrite);
+    
+    DataRef<float> dr_plane_ax("sim/flightmodel/position/local_ax", ReadWrite);
+    DataRef<float> dr_plane_ay("sim/flightmodel/position/local_ay", ReadWrite);
+    DataRef<float> dr_plane_az("sim/flightmodel/position/local_az", ReadWrite);
+    
+    DataRef<float> dr_plane_y_agl("sim/flightmodel/position/y_agl");
+    float reference_h = 0.0;
+    
+    DataRef<float>  dr_plane_psi("sim/flightmodel/position/psi", ReadWrite);
+    DataRef<float>  dr_plane_true_psi("sim/flightmodel/position/true_psi");
+    DataRef<float>  dr_plane_the("sim/flightmodel/position/theta", ReadWrite);
+    DataRef<float>  dr_plane_phi("sim/flightmodel/position/phi", ReadWrite);
+    
+    DataRef<double>  dr_plane_lat("sim/flightmodel/position/latitude");
+    DataRef<double>  dr_plane_lon("sim/flightmodel/position/longitude");
+    
+    DataRef<std::vector<float>> dr_plane_q("sim/flightmodel/position/q", ReadWrite);
+
+    ----
+
+    DRefFloat dr_pos_x{"sim/flightmodel/position/local_x"};
+    DRefFloat dr_pos_y{"sim/flightmodel/position/local_y"};
+    DRefFloat dr_pos_z{"sim/flightmodel/position/local_z"};
+    
+    DRefFloat dr_plane_psi{"sim/flightmodel/position/true_psi"}; // just psi in opengl display?
+    DRefFloat dr_plane_the{"sim/flightmodel/position/true_theta"};
+    DRefFloat dr_plane_phi{"sim/flightmodel/position/phi"};
+    
+    DRefDouble dr_pos_latitude{"sim/flightmodel/position/latitude"};
+    DRefDouble dr_pos_longitude{"sim/flightmodel/position/longitude"};
+  */
+}
+
 // Put a smoke thingt at airports
 static void smoke_airports() {
 
@@ -519,6 +688,7 @@ int toggle_ap_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
 int toggle_ap_smoker_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     smoke_airports();
+    warp_to_ai(); /////////////////////////// TEST <<--------------<<--------------<<----------------<<-----
   }
   return 0;
 }

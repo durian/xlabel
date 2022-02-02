@@ -40,11 +40,18 @@ namespace XLABEL {
     
   DRefInt dr_tcas_num_acf{"sim/cockpit2/tcas/indicators/tcas_num_acf"};
   DRefInt dr_override_TCAS{"sim/operation/override/override_TCAS"};
+  DRefInt dr_override_flightcontrol{"sim/operation/override/override_flightcontrol"};
   DRefInt dr_acf_modeS_id{"sim/aircraft/view/acf_modeS_id"};
   DRefFloatArray dr_tcas_pos_x{"sim/cockpit2/tcas/targets/position/x"};
   DRefFloatArray dr_tcas_pos_y{"sim/cockpit2/tcas/targets/position/y"};
   DRefFloatArray dr_tcas_pos_z{"sim/cockpit2/tcas/targets/position/z"};
+  DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
+  DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
+  DRefFloatArray dr_tcas_pos_the{"sim/cockpit2/tcas/targets/position/the"};
   DRefFloatArray dr_tcas_pos_ele{"sim/cockpit2/tcas/targets/position/ele"};
+  DRefFloatArray dr_tcas_vel_x{"sim/cockpit2/tcas/targets/position/vx"};
+  DRefFloatArray dr_tcas_vel_y{"sim/cockpit2/tcas/targets/position/vy"};
+  DRefFloatArray dr_tcas_vel_z{"sim/cockpit2/tcas/targets/position/vz"};
   
   DRefFloatArray dr_rel_dist_mtrs{"sim/cockpit2/tcas/indicators/relative_distance_mtrs"};
   DRefFloatArray dr_ref_alt_mtrs{"sim/cockpit2/tcas/indicators/relative_altitude_mtrs"};
@@ -55,6 +62,12 @@ namespace XLABEL {
   DRefFloat dr_pos_x{"sim/flightmodel/position/local_x"};
   DRefFloat dr_pos_y{"sim/flightmodel/position/local_y"};
   DRefFloat dr_pos_z{"sim/flightmodel/position/local_z"};
+
+  DRefFloatArray dr_plane_q{"sim/flightmodel/position/q"};
+  
+  DRefFloat dr_vel_x{"sim/flightmodel/position/local_vx"};
+  DRefFloat dr_vel_y{"sim/flightmodel/position/local_vy"};
+  DRefFloat dr_vel_z{"sim/flightmodel/position/local_vz"};
 
   DRefFloat dr_plane_psi{"sim/flightmodel/position/true_psi"}; // just psi in opengl display?
   DRefFloat dr_plane_the{"sim/flightmodel/position/true_theta"};
@@ -94,7 +107,13 @@ namespace XLABEL {
     dr_tcas_pos_x.get_all();
     dr_tcas_pos_y.get_all();
     dr_tcas_pos_z.get_all();
+    dr_tcas_pos_psi.get_all();
+    dr_tcas_pos_phi.get_all();
+    dr_tcas_pos_the.get_all();
     dr_tcas_pos_ele.get_all();
+    dr_tcas_vel_x.get_all();
+    dr_tcas_vel_y.get_all();
+    dr_tcas_vel_z.get_all();
     
     dr_V_msc.get_all();
     dr_vertical_speed.get_all();
