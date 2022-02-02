@@ -33,6 +33,7 @@ namespace XLABEL {
   XPLMCommandRef toggle_ap_label_cmd;
   XPLMCommandRef toggle_ap_smoker_cmd;
   XPLMCommandRef toggle_units_cmd;
+  XPLMCommandRef toggle_warp_to_ai_cmd;
   bool show_ac_label = false;
   bool show_ap_label = false;
   int  label_kind = 0;

@@ -55,7 +55,7 @@ DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
 std::vector<poi> pois;
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
 
-// For warp
+// For warp (special DEG_TO_RAD!)
 #define DEG_TO_RAD_2 M_PI / 360.0
 typedef struct _Eulers {
   double psi;
@@ -492,14 +492,24 @@ static void warp_to_ai() {
   float lz1  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
   float ly1  = static_cast<float>(dr_tcas_pos_y.get_memory(i));
   float ele1 = static_cast<float>(dr_tcas_pos_ele.get_memory(i));
-
+  
   float vx1  = static_cast<float>(dr_tcas_vel_x.get_memory(i)); // or were these doubles
   float vz1  = static_cast<float>(dr_tcas_vel_z.get_memory(i));
   float vy1  = static_cast<float>(dr_tcas_vel_y.get_memory(i));
 
   float phi1 = static_cast<float>(dr_tcas_pos_phi.get_memory(i)); // or were these doubles
-  float psi1 = static_cast<float>(dr_tcas_pos_psi.get_memory(i));
+  float psi1 = static_cast<float>(dr_tcas_pos_psi.get_memory(i)); // heading
   float the1 = static_cast<float>(dr_tcas_pos_the.get_memory(i));
+
+  // dist is 100.0 m
+  double angle_offset = fmod((psi1 + 180.0), 360);
+  double s =  sin(angle_offset * (double)(M_PI/180));
+  double c = -cos(angle_offset * (double)(M_PI/180));
+  
+  double delta_x = 100.0 *  s;
+  double delta_z = 100.0 * c;
+  lx1 += delta_x;
+  lz1 += delta_z;
 
   dr_override_flightcontrol.set_int( 1 );
   
@@ -534,48 +544,6 @@ static void warp_to_ai() {
   
   dr_override_flightcontrol.set_int( 0 );
   
-  // move values to user aircraft (quaternions too?)
-  /*
-    DataRef<std::vector<int>> dr_override_planepath("sim/operation/override/override_planepath", ReadWrite); // ARRAY?
-    
-    DataRef<double> dr_plane_lx("sim/flightmodel/position/local_x", ReadWrite);
-    DataRef<double> dr_plane_ly("sim/flightmodel/position/local_y", ReadWrite);
-    DataRef<double> dr_plane_lz("sim/flightmodel/position/local_z", ReadWrite);
-    
-    DataRef<float> dr_plane_vx("sim/flightmodel/position/local_vx", ReadWrite);
-    DataRef<float> dr_plane_vy("sim/flightmodel/position/local_vy", ReadWrite);
-    DataRef<float> dr_plane_vz("sim/flightmodel/position/local_vz", ReadWrite);
-    
-    DataRef<float> dr_plane_ax("sim/flightmodel/position/local_ax", ReadWrite);
-    DataRef<float> dr_plane_ay("sim/flightmodel/position/local_ay", ReadWrite);
-    DataRef<float> dr_plane_az("sim/flightmodel/position/local_az", ReadWrite);
-    
-    DataRef<float> dr_plane_y_agl("sim/flightmodel/position/y_agl");
-    float reference_h = 0.0;
-    
-    DataRef<float>  dr_plane_psi("sim/flightmodel/position/psi", ReadWrite);
-    DataRef<float>  dr_plane_true_psi("sim/flightmodel/position/true_psi");
-    DataRef<float>  dr_plane_the("sim/flightmodel/position/theta", ReadWrite);
-    DataRef<float>  dr_plane_phi("sim/flightmodel/position/phi", ReadWrite);
-    
-    DataRef<double>  dr_plane_lat("sim/flightmodel/position/latitude");
-    DataRef<double>  dr_plane_lon("sim/flightmodel/position/longitude");
-    
-    DataRef<std::vector<float>> dr_plane_q("sim/flightmodel/position/q", ReadWrite);
-
-    ----
-
-    DRefFloat dr_pos_x{"sim/flightmodel/position/local_x"};
-    DRefFloat dr_pos_y{"sim/flightmodel/position/local_y"};
-    DRefFloat dr_pos_z{"sim/flightmodel/position/local_z"};
-    
-    DRefFloat dr_plane_psi{"sim/flightmodel/position/true_psi"}; // just psi in opengl display?
-    DRefFloat dr_plane_the{"sim/flightmodel/position/true_theta"};
-    DRefFloat dr_plane_phi{"sim/flightmodel/position/phi"};
-    
-    DRefDouble dr_pos_latitude{"sim/flightmodel/position/latitude"};
-    DRefDouble dr_pos_longitude{"sim/flightmodel/position/longitude"};
-  */
 }
 
 // Put a smoke thingt at airports
@@ -688,7 +656,6 @@ int toggle_ap_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
 int toggle_ap_smoker_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     smoke_airports();
-    warp_to_ai(); /////////////////////////// TEST <<--------------<<--------------<<----------------<<-----
   }
   return 0;
 }
@@ -700,6 +667,13 @@ int toggle_units_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, vo
     } else {
       units = 0;
     }
+  }
+  return 0;
+}
+
+int toggle_warp_to_ai_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    warp_to_ai();
   }
   return 0;
 }
@@ -772,6 +746,9 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   toggle_units_cmd = XPLMCreateCommand("durian/xlabel/toggle_units", "Toggle meters/feet");
   XPLMRegisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
 
+ toggle_warp_to_ai_cmd = XPLMCreateCommand("durian/xlabel/warp_to_ai", "Warp user aircraft to first AI aircraft");
+ XPLMRegisterCommandHandler(toggle_warp_to_ai_cmd, toggle_warp_to_ai_handler, 0, (void *)0);
+
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
 
@@ -789,6 +766,7 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_smoker_cmd, toggle_ap_smoker_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_warp_to_ai_cmd, toggle_warp_to_ai_handler, 0, (void *)0);
   XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
   XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);
 
