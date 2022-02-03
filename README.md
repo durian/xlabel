@@ -28,4 +28,4 @@ This plugin has no menu or userinterface. There are five commands you can assign
 
 The following screen shot shows the labels for Ai aircraft, POIs and a smoke marker on the airport.
 
-![Screenshot](info/scrot4.png)
+![Screenshot](info/scrot4.jpg)
