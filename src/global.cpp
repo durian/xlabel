@@ -107,6 +107,13 @@ namespace XLABEL {
   DRefFloat dr_M_total{"sim/flightmodel/forces/M_total"};//	float	y NM	The pitch moment total.
   DRefFloat dr_N_total{"sim/flightmodel/forces/N_total"};//	float	y NM	The yaw moment total.
 
+  DRefFloat dr_pos_P{"sim/flightmodel/position/P"};//
+  DRefFloat dr_pos_Q{"sim/flightmodel/position/Q"};//	float	y	deg/sec	The pitch rotation rates
+  DRefFloat dr_pos_R{"sim/flightmodel/position/R"};//	float	y	deg/sec	The yaw rotation rates
+  DRefFloat dr_pos_Prad{"sim/flightmodel/position/Prad"};//	float	y	rad/sec	The roll rotation rates 
+  DRefFloat dr_pos_Qrad{"sim/flightmodel/position/Qrad"};//	float	y	rad/sec	The pitch rotation rates
+  DRefFloat dr_pos_Rrad{"sim/flightmodel/position/Rrad"};//	float	y	rad/sec	The yaw rotation rates 
+
   double plane_prev_lat = 0.0; // Yes, I know, real coords, but in the ocean.
   double plane_prev_lon = 0.0;
 

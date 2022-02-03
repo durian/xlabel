@@ -102,6 +102,13 @@ namespace XLABEL {
   extern DRefFloat dr_M_total;
   extern DRefFloat dr_N_total;
 
+  extern DRefFloat dr_pos_P;
+  extern DRefFloat dr_pos_Q;
+  extern DRefFloat dr_pos_R;
+  extern DRefFloat dr_pos_Prad;
+  extern DRefFloat dr_pos_Qrad;
+  extern DRefFloat dr_pos_Rrad;
+  
   extern double plane_prev_lat;
   extern double plane_prev_lon;
 

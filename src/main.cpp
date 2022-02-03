@@ -590,11 +590,18 @@ static void warp_to_ai() {
   //
   dr_pos_y.set_float( ly1 );
 
-  // velocity
-  dr_vel_x.set_float( vx1 );
-  dr_vel_z.set_float( vz1 );
-  dr_vel_y.set_float( vy1 );
-
+  // velocity (not doing this causes problems... why?)
+  // because we need to put the vx/vz right, reclculate it for the new headingm aybe
+  angle_offset = psi1; // just swap s and c instead?
+  s =  sin(angle_offset * (double)(M_PI/180));
+  c = -cos(angle_offset * (double)(M_PI/180));
+  float user_vel = sqrt( (dr_vel_x.get_float() * dr_vel_x.get_float()) + (dr_vel_z.get_float() * dr_vel_z.get_float()) );
+  
+  //dr_vel_x.set_float( vx1 );
+  dr_vel_x.set_float( user_vel * s );
+  //dr_vel_z.set_float( vz1 );
+  dr_vel_z.set_float( user_vel * c );
+  dr_vel_y.set_float( vy1 ); 
   
   // convert AI eulers to Q
   Eulers ypr = {0, 0, 0};
@@ -603,6 +610,15 @@ static void warp_to_ai() {
   ypr.the = the1;
   ypr.phi = phi1;
   EulersToQuaternion(ypr, q); // convert back
+
+  dr_plane_q.set_float( static_cast<float>(q.w), 0 );
+  dr_plane_q.set_float( static_cast<float>(q.x), 1 );
+  dr_plane_q.set_float( static_cast<float>(q.y), 2 );
+  dr_plane_q.set_float( static_cast<float>(q.z), 3 );
+
+  dr_plane_psi.set_float( psi1 );
+  dr_plane_phi.set_float( phi1 );
+  dr_plane_the.set_float( the1 );
 
   // Do this to align you aircraft, should reset forces!
 
@@ -627,17 +643,14 @@ static void warp_to_ai() {
   dr_M_prop.set_float( 0.0 );
   dr_N_prop.set_float( 0.0 );
 
+  // needed?
+  dr_pos_P.set_float( 0.0 );
+  dr_pos_Q.set_float( 0.0 );
+  dr_pos_R.set_float( 0.0 );
+  dr_pos_Prad.set_float( 0.0 );
+  dr_pos_Qrad.set_float( 0.0 );
+  dr_pos_Rrad.set_float( 0.0 );
   
-  dr_plane_q.set_float( static_cast<float>(q.w), 0 );
-  dr_plane_q.set_float( static_cast<float>(q.x), 1 );
-  dr_plane_q.set_float( static_cast<float>(q.y), 2 );
-  dr_plane_q.set_float( static_cast<float>(q.z), 3 );
-  
-  //  dr_plane_q = {static_cast<float>(q.w), static_cast<float>(q.x),
-  //  static_cast<float>(q.y), static_cast<float>(q.z)};
-  dr_plane_psi.set_float( psi1 );
-  dr_plane_phi.set_float( phi1 );
-  dr_plane_the.set_float( the1 );
 
   // end orientation
   dr_override_forces.set_int( 0 );
