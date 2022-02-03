@@ -24,4 +24,8 @@ This plugin has no menu or userinterface. There are five commands you can assign
  - durian/xlabel/toggle_units: switch between metric/imperial
  - durian/xlabel/warp_to_ai: warp to AI aircraft #1
 
- 
+## Kitchensink
+
+The following screen shot shows the labels for Ai aircraft, POIs and a smoke marker on the airport.
+
+![Screenshot](info/scrot4.png)
