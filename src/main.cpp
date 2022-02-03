@@ -523,27 +523,38 @@ static void warp_to_ai() {
     return;
   }
 
-  // take closest? Should prolly keep a sorted list?
+  // take closest? Should prolly keep a sorted list? Sort?
+  // Or just step through the list!
+  int closest_idx   = 1;
   float max_dist    = 1000000;
-  int   closest_idx = 1;
   float user_x      = dr_pos_x.get_float();
   float user_z      = dr_pos_z.get_float();
   bool  res         = get_tcas_positions();
+#if 0
   for( auto i = 1; i < ai; ++i) {
     float lx   = static_cast<float>(dr_tcas_pos_x.get_memory(i)); 
     float lz   = static_cast<float>(dr_tcas_pos_z.get_memory(i));
-    float dist = sqrt( ((user_x-lx)*(user_x-lx)) + ((user_z-lz)*(user_z-lz)) ); 
-    if ( dist < max_dist ) {
-      max_dist = dist;
-      closest_idx = i;
+    float dist = sqrt( ((user_x-lx)*(user_x-lx)) + ((user_z-lz)*(user_z-lz)) );
+    if ( dist > 500 ) { // if too close, take another
+      if ( dist < max_dist ) {
+	max_dist = dist;
+	closest_idx = i;
+      }
     }
   }
+#endif
+
+  last_ai_ac_index += 1;
+  if ( last_ai_ac_index >= ai ) {
+    last_ai_ac_index = 1;
+  }
+  closest_idx = last_ai_ac_index;
+  
   // #ifdef DBG
   lg.xplm( "warp_to_ai():closest_idx = " + std::to_string(closest_idx) + "\n" );
   // #endif
     
-  int i = closest_idx;
-  float lx1  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
+  int i = closest_idx;  float lx1  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
   float lz1  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
   float ly1  = static_cast<float>(dr_tcas_pos_y.get_memory(i));
   float ele1 = static_cast<float>(dr_tcas_pos_ele.get_memory(i));
@@ -553,7 +564,7 @@ static void warp_to_ai() {
   float vy1  = static_cast<float>(dr_tcas_vel_y.get_memory(i));
 
 #ifdef DBG
-  lg.xplm( "warp_to_ai():ai x/y/zvel = " + std::to_string(vx1) + ", "
+  lg.xplm( "warp_to_ai():ai x/y/z vel = " + std::to_string(vx1) + ", "
 	   + std::to_string(vy1) + ", "
 	   + std::to_string(vz1) + ", "
 	   + "\n" );
@@ -614,6 +625,7 @@ static void warp_to_ai() {
   dr_fnrml_prop.set_float( 0.0 );
   dr_faxil_prop.set_float( 0.0 );
   dr_L_prop.set_float( 0.0 );
+  dr_M_prop.set_float( 0.0 );
   dr_N_prop.set_float( 0.0 );
 
   
@@ -633,8 +645,7 @@ static void warp_to_ai() {
   dr_override_wing_forces.set_int( 0 );
   dr_override_engine_forces.set_int( 0 );
   
-  dr_override_flightcontrol.set_int( 0 );
-  
+  dr_override_flightcontrol.set_int( 0 );  
 }
 
 // Put a smoke thingt at airports
@@ -677,7 +688,7 @@ static void smoke_airports() {
     float dy = poi_y - py; 
 
     double latlon_dist = dist_latlon(uplat, uplon, plat, plon); // but not exact.... hmmm
-    lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
+    //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
     
     if ( latlon_dist >= max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
       //break;//continue; // skip if too far away // break; // we are sorted

@@ -109,6 +109,7 @@ namespace XLABEL {
 
   // for warp
   extern int ai_ac_index;
+  extern int last_ai_ac_index;
   extern int warp_distance;
   
   extern std::map< std::string, std::vector<poi> > poimap;
