@@ -574,13 +574,12 @@ static void warp_to_ai() {
   float psi1 = static_cast<float>(dr_tcas_pos_psi.get_memory(i)); // heading
   float the1 = static_cast<float>(dr_tcas_pos_the.get_memory(i));
 
-  // dist is 100.0 m
   double angle_offset = fmod((psi1 + 180.0), 360);
   double s =  sin(angle_offset * (double)(M_PI/180));
   double c = -cos(angle_offset * (double)(M_PI/180));
   
-  double delta_x = 100.0 *  s;
-  double delta_z = 100.0 * c;
+  double delta_x = warp_distance * s;
+  double delta_z = warp_distance * c;
   lx1 += delta_x;
   lz1 += delta_z;
 

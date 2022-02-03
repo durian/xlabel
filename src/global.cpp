@@ -114,8 +114,8 @@ namespace XLABEL {
 
   // for warp
   int ai_ac_index   = 1; // maybe take closest?
-  int last_ai_ac_index = 1;
-  int warp_distance = 100; // meters
+  int last_ai_ac_index = 0;
+  int warp_distance = 200; // meters
 
   std::map< std::string, std::vector<poi> > poimap;
   
