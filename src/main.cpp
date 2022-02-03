@@ -479,15 +479,70 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   return 1;
 }
 
+// This should be reversed, warp the AI to me...
+
+/*
+# Override with override_wing_forces
+sim/flightmodel/forces/fside_aero	float	y	Newtons	Aerodynamic forces - sideways - ACF X. 
+sim/flightmodel/forces/fnrml_aero	float	y	Newtons	Aerodynamic forces - upward - ACF Y.
+sim/flightmodel/forces/faxil_aero	float	y	Newtons	Aerodynamic forces - backward - ACF Z
+#
+sim/flightmodel/forces/L_aero	float	y	NM	The roll moment due to aerodynamic forces
+sim/flightmodel/forces/M_aero	float	y	NM	The pitch moment due to aerodynamic forces
+sim/flightmodel/forces/N_aero	float	y	NM	The yaw moment due to aerodynamic forces
+
+
+# Override with override_engines or override_engine_forces
+sim/flightmodel/forces/fside_prop	float	y	Newtons	force sideways by all engines on the ACF. 
+sim/flightmodel/forces/fnrml_prop	float	y	Newtons	force upward by all engines on the ACF. 
+sim/flightmodel/forces/faxil_prop	float	y	Newtons	force backward by all engines on the ACF
+#
+sim/flightmodel/forces/L_prop	float	y	NM	The roll moment due to prop forces. 
+sim/flightmodel/forces/M_prop	float	y	NM	The pitch moment due to prop forces.
+sim/flightmodel/forces/N_prop	float	y	NM	The yaw moment due to prop forces. 
+
+
+# Override with override_forces
+sim/flightmodel/forces/L_total	float	y	NM	The roll moment total. 
+sim/flightmodel/forces/M_total	float	y	NM	The pitch moment total.
+sim/flightmodel/forces/N_total	float	y	NM	The yaw moment total.
+
+
+(sim/operation/override/override_engines	int	y	boolean	overrides all engine calculations - write to LMN and g_nrml/side/axil.)
+sim/operation/override/override_forces	int	y	boolean	overrides all force calculations - write to LMN and g_nrml/side/axil.
+sim/operation/override/override_wing_forces	int	y	boolean	overrides all wing calculations - write to aero LMN and g_nrml/side/axil.
+sim/operation/override/override_engine_forces	int	y	boolean	overrides all engine calculations - write to prop LMN and g_nrml/side/axil.
+*/
 static void warp_to_ai() {
 
   int ai = dr_tcas_num_acf.get_int();
+#ifdef DBG
+  lg.xplm( "warp_to_ai():get_tcas_positions() = " + std::to_string(ai) + "\n" );
+#endif
   if ( ai < 2 ) {
     return;
   }
-  
-  bool res = get_tcas_positions();
-  int i = 1;
+
+  // take closest? Should prolly keep a sorted list?
+  float max_dist    = 1000000;
+  int   closest_idx = 1;
+  float user_x      = dr_pos_x.get_float();
+  float user_z      = dr_pos_z.get_float();
+  bool  res         = get_tcas_positions();
+  for( auto i = 1; i < ai; ++i) {
+    float lx   = static_cast<float>(dr_tcas_pos_x.get_memory(i)); 
+    float lz   = static_cast<float>(dr_tcas_pos_z.get_memory(i));
+    float dist = sqrt( ((user_x-lx)*(user_x-lx)) + ((user_z-lz)*(user_z-lz)) ); 
+    if ( dist < max_dist ) {
+      max_dist = dist;
+      closest_idx = i;
+    }
+  }
+  // #ifdef DBG
+  lg.xplm( "warp_to_ai():closest_idx = " + std::to_string(closest_idx) + "\n" );
+  // #endif
+    
+  int i = closest_idx;
   float lx1  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
   float lz1  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
   float ly1  = static_cast<float>(dr_tcas_pos_y.get_memory(i));
@@ -496,6 +551,13 @@ static void warp_to_ai() {
   float vx1  = static_cast<float>(dr_tcas_vel_x.get_memory(i)); // or were these doubles
   float vz1  = static_cast<float>(dr_tcas_vel_z.get_memory(i));
   float vy1  = static_cast<float>(dr_tcas_vel_y.get_memory(i));
+
+#ifdef DBG
+  lg.xplm( "warp_to_ai():ai x/y/zvel = " + std::to_string(vx1) + ", "
+	   + std::to_string(vy1) + ", "
+	   + std::to_string(vz1) + ", "
+	   + "\n" );
+#endif
 
   float phi1 = static_cast<float>(dr_tcas_pos_phi.get_memory(i)); // or were these doubles
   float psi1 = static_cast<float>(dr_tcas_pos_psi.get_memory(i)); // heading
@@ -518,11 +580,13 @@ static void warp_to_ai() {
   //
   dr_pos_y.set_float( ly1 );
 
+  /*
   dr_vel_x.set_float( vx1 );
   dr_vel_z.set_float( vz1 );
   //
   dr_vel_y.set_float( vy1 );
-
+  */
+  
   // convert AI eulers to Q
   Eulers ypr = {0, 0, 0};
   Quaternion q;
@@ -531,6 +595,7 @@ static void warp_to_ai() {
   ypr.phi = phi1;
   EulersToQuaternion(ypr, q); // convert back
 
+  /* Do this to align you aircraft, should reset forces!
   dr_plane_q.set_float( static_cast<float>(q.w), 0 );
   dr_plane_q.set_float( static_cast<float>(q.x), 1 );
   dr_plane_q.set_float( static_cast<float>(q.y), 2 );
@@ -541,6 +606,7 @@ static void warp_to_ai() {
   dr_plane_psi.set_float( psi1 );
   dr_plane_phi.set_float( phi1 );
   dr_plane_the.set_float( the1 );
+  */
   
   dr_override_flightcontrol.set_int( 0 );
   
@@ -912,7 +978,9 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 
   std::string gh;
   geohash::encode( plat, plon, 8, gh );
+#ifdef DBG
   lg.xplm( "GEOHASH: " + gh + "\n" );
+#endif
   /*
   std::string prefix = gh.substr(0, 3);
   std::vector<poi> gh_pois = poimap[prefix];
@@ -953,8 +1021,10 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
     float dz = pz - poi.z;
     float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
 
+#ifdef DBG
     lg.xplm( "Closest to: "+poi.name+", "+std::to_string(latlon_dist)+", "+std::to_string(dist)+
 	     " "+poi.geohash + "\n" );
+#endif
     if ( --c <= 0 ) {
       break;
     }
