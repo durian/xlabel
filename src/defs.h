@@ -1,2 +1,2 @@
 // Lots of deug output
-#define DBG 1
+#define DBG 0

@@ -82,10 +82,39 @@ namespace XLABEL {
   DRefInt dr_screen_width{"sim/graphics/view/window_width"};
   DRefInt dr_screen_height{"sim/graphics/view/window_height"};
 
+  DRefInt dr_override_forces{"sim/operation/override/override_forces"};
+  DRefInt dr_override_wing_forces{"sim/operation/override/override_wing_forces"};
+  DRefInt dr_override_engine_forces{"sim/operation/override/override_engine_forces"};
+
+  // Override with override_wing_forces
+  DRefFloat dr_fside_aero{"sim/flightmodel/forces/fside_aero"};//float	y Newtons	Aerodynamic forces - sideways - ACF X. 
+  DRefFloat dr_fnrml_aero{"sim/flightmodel/forces/fnrml_aero"};//float	y Newtons	Aerodynamic forces - upward -  ACF Y
+  DRefFloat dr_faxil_aero{"sim/flightmodel/forces/faxil_aero"};//float	y Newtons	Aerodynamic forces - backward - ACF Z
+  DRefFloat dr_L_aero{"sim/flightmodel/forces/L_aero"};//float	y NM	The roll moment due to aerodynamic forces
+  DRefFloat dr_M_aero{"sim/flightmodel/forces/M_aero"};//float	y NM	The pitch moment due to aerodynamic forces
+  DRefFloat dr_N_aero{"sim/flightmodel/forces/N_aero"};//float	y NM	The yaw moment due to aerodynamic forces
+  
+  // Override with override_engines or override_engine_forces
+  DRefFloat dr_fside_prop{"sim/flightmodel/forces/fside_prop"};//float	y Newtons	force sideways by all engines on the ACF. 
+  DRefFloat dr_fnrml_prop{"sim/flightmodel/forces/fnrml_prop"};//float	y Newtons	force upward by all engines on the ACF. 
+  DRefFloat dr_faxil_prop{"sim/flightmodel/forces/faxil_prop"};//float	 Newtons	force backward by all engines on the ACF
+  DRefFloat dr_L_prop{"sim/flightmodel/forces/L_prop"};//float	y NM	The roll moment due to prop forces. 
+  DRefFloat dr_M_prop{"sim/flightmodel/forces/M_prop"};//float	y NM	The pitch moment due to prop forces.
+  DRefFloat dr_N_prop{"sim/flightmodel/forces/N_prop"};//float	y NM	The yaw moment due to prop forces. 
+
+  // Override with override_forces
+  DRefFloat dr_L_total{"sim/flightmodel/forces/L_total"};//	float	y NM	The roll moment total. 
+  DRefFloat dr_M_total{"sim/flightmodel/forces/M_total"};//	float	y NM	The pitch moment total.
+  DRefFloat dr_N_total{"sim/flightmodel/forces/N_total"};//	float	y NM	The yaw moment total.
+
   double plane_prev_lat = 0.0; // Yes, I know, real coords, but in the ocean.
   double plane_prev_lon = 0.0;
 
   int max_shown = 28;
+
+  // for warp
+  int ai_ac_index   = 1; // maybe take closest?
+  int warp_distance = 100; // meters
 
   std::map< std::string, std::vector<poi> > poimap;
   

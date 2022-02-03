@@ -78,11 +78,39 @@ namespace XLABEL {
   extern DRefInt dr_screen_width;
   extern DRefInt dr_screen_height;
 
+  extern DRefInt dr_override_forces;
+  extern DRefInt dr_override_wing_forces;
+  extern DRefInt dr_override_engine_forces;
+
+  extern DRefFloat dr_fside_aero;
+  extern DRefFloat dr_fnrml_aero;
+  extern DRefFloat dr_faxil_aero;
+  extern DRefFloat dr_L_aero;
+  extern DRefFloat dr_M_aero;
+  extern DRefFloat dr_N_aero;
+  
+  // Override with override_engines or override_engine_forces
+  extern DRefFloat dr_fside_prop;
+  extern DRefFloat dr_fnrml_prop;
+  extern DRefFloat dr_faxil_prop;
+  extern DRefFloat dr_L_prop;
+  extern DRefFloat dr_M_prop;
+  extern DRefFloat dr_N_prop;
+
+  // Override with override_forces
+  extern DRefFloat dr_L_total;
+  extern DRefFloat dr_M_total;
+  extern DRefFloat dr_N_total;
+
   extern double plane_prev_lat;
   extern double plane_prev_lon;
 
   extern int max_shown;
 
+  // for warp
+  extern int ai_ac_index;
+  extern int warp_distance;
+  
   extern std::map< std::string, std::vector<poi> > poimap;
   
   extern Smoker *pss_obj;
