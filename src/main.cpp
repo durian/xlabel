@@ -580,12 +580,11 @@ static void warp_to_ai() {
   //
   dr_pos_y.set_float( ly1 );
 
-  /*
+  // velocity
   dr_vel_x.set_float( vx1 );
   dr_vel_z.set_float( vz1 );
-  //
   dr_vel_y.set_float( vy1 );
-  */
+
   
   // convert AI eulers to Q
   Eulers ypr = {0, 0, 0};
@@ -595,7 +594,29 @@ static void warp_to_ai() {
   ypr.phi = phi1;
   EulersToQuaternion(ypr, q); // convert back
 
-  /* Do this to align you aircraft, should reset forces!
+  // Do this to align you aircraft, should reset forces!
+
+  dr_override_forces.set_int( 1 );
+  dr_L_total.set_float( 0.0 );
+  dr_M_total.set_float( 0.0 );
+  dr_N_total.set_float( 0.0 );
+
+  dr_override_wing_forces.set_int( 1 );
+  dr_fside_aero.set_float( 0.0 );
+  dr_fnrml_aero.set_float( 0.0 );
+  dr_faxil_aero.set_float( 0.0 );
+  dr_L_aero.set_float( 0.0 );
+  dr_M_aero.set_float( 0.0 );
+  dr_N_aero.set_float( 0.0 );
+  
+  dr_override_engine_forces.set_int( 1 );
+  dr_fside_prop.set_float( 0.0 );
+  dr_fnrml_prop.set_float( 0.0 );
+  dr_faxil_prop.set_float( 0.0 );
+  dr_L_prop.set_float( 0.0 );
+  dr_N_prop.set_float( 0.0 );
+
+  
   dr_plane_q.set_float( static_cast<float>(q.w), 0 );
   dr_plane_q.set_float( static_cast<float>(q.x), 1 );
   dr_plane_q.set_float( static_cast<float>(q.y), 2 );
@@ -606,7 +627,11 @@ static void warp_to_ai() {
   dr_plane_psi.set_float( psi1 );
   dr_plane_phi.set_float( phi1 );
   dr_plane_the.set_float( the1 );
-  */
+
+  // end orientation
+  dr_override_forces.set_int( 0 );
+  dr_override_wing_forces.set_int( 0 );
+  dr_override_engine_forces.set_int( 0 );
   
   dr_override_flightcontrol.set_int( 0 );
   
