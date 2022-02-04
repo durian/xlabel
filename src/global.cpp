@@ -33,7 +33,8 @@ namespace XLABEL {
   XPLMCommandRef toggle_ap_label_cmd;
   XPLMCommandRef toggle_ap_smoker_cmd;
   XPLMCommandRef toggle_units_cmd;
-  XPLMCommandRef toggle_warp_to_ai_cmd;
+  XPLMCommandRef toggle_warp_to_next_ai_cmd;
+  XPLMCommandRef toggle_warp_to_prev_ai_cmd;
   bool show_ac_label = false;
   bool show_ap_label = false;
   int  label_kind = 0;
@@ -131,7 +132,7 @@ namespace XLABEL {
   
   bool get_tcas_positions() {
 #ifdef DBG
-    lg.xplm( "get_tcas_positions() START\n" );
+    //lg.xplm( "get_tcas_positions() START\n" );
 #endif
     // Number is in dr_tcas_num_acf
     if ( dr_tcas_num_acf.is_initialised() ) {
@@ -159,7 +160,7 @@ namespace XLABEL {
     dr_tcas_modeS.get_all();
     
 #ifdef DBG
-    lg.xplm( "get_tcas_positions() END\n" );
+    //lg.xplm( "get_tcas_positions() END\n" );
 #endif
     return true;
   }
