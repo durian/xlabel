@@ -69,6 +69,10 @@ add_compile_options(-O3)
 
 # X-Plane plugin
 list(APPEND XLABEL_SRCS
+  dr.h
+  global.h
+  Log.h
+  Smoker.h
   main.cpp
   global.cpp
   Log.cpp

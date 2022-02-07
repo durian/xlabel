@@ -73,7 +73,7 @@ echo -e "\n\n\n"
 find ../bin -name 'xlabel.xpl' -ls
 echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11/Resources/plugins/${PLGBASE}/$DIR
 echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11b/Resources/plugins/${PLGBASE}/$DIR
-echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11c/Resources/plugins/${PLGBASE}/$DIR
+echo cp ../bin/${PLGBASE}/${DIR}${PLG} ~/xplane11n/Resources/plugins/${PLGBASE}/$DIR
 echo scp ../bin/${PLGBASE}/mac_x64/${PLG} pberck@192.168.1.32:xplane11/Resources/plugins/${PLGBASE}/mac_x64/
 echo cp -r ../bin/${PLGBASE} ~/xplane11b/Resources/plugins/
 echo ""

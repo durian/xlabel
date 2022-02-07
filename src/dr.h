@@ -2,11 +2,12 @@
 
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 #include "XPLMDataAccess.h"
 
 namespace XLABEL {
-
+  
   class DRef { 
   public:
     

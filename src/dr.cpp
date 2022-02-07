@@ -7,10 +7,6 @@
 #include "Log.h"
 
 namespace XLABEL {
-
-  /*
-    This code really needs improving...
-  */
   
   DRef::DRef( const std::string &a_path ) : path{ a_path } {
     initialised = false;
@@ -62,7 +58,7 @@ namespace XLABEL {
     if ( init() ) {
       return XPLMGetDatai( dref ); // 0 if fails... (how usefull)
     }
-    return 0;
+    return 0; // Needs better error handling
   }
   
   bool DRefInt::set_int(int val) {

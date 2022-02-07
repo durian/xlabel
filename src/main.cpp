@@ -479,6 +479,142 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   return 1;
 }
 
+static void warp_to_closest_ai() {
+
+  int ai = dr_tcas_num_acf.get_int();
+#ifdef DBG
+  lg.xplm( "warp_to_next_ai():get_tcas_positions() = " + std::to_string(ai) + "\n" );
+#endif
+  if ( ai < 2 ) {
+    return;
+  }
+
+  // take closest? Should prolly keep a sorted list? Sort?
+  // Or just step through the list!
+  int closest_idx   = 1;
+  float max_dist    = 1000000;
+  float user_x      = dr_pos_x.get_float();
+  float user_z      = dr_pos_z.get_float();
+  bool  res         = get_tcas_positions();
+  for( auto i = 1; i < ai; ++i) {
+    float lx   = static_cast<float>(dr_tcas_pos_x.get_memory(i)); 
+    float lz   = static_cast<float>(dr_tcas_pos_z.get_memory(i));
+    float dist = sqrt( ((user_x-lx)*(user_x-lx)) + ((user_z-lz)*(user_z-lz)) );
+    if ( dist > 500 ) { // if too close, take another
+      if ( dist < max_dist ) {
+	max_dist = dist;
+	closest_idx = i;
+      }
+    }
+  }
+
+  int i = closest_idx;
+  float lx1  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
+  float lz1  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
+  float ly1  = static_cast<float>(dr_tcas_pos_y.get_memory(i));
+  float ele1 = static_cast<float>(dr_tcas_pos_ele.get_memory(i));
+  
+  float vx1  = static_cast<float>(dr_tcas_vel_x.get_memory(i)); // or were these doubles
+  float vz1  = static_cast<float>(dr_tcas_vel_z.get_memory(i));
+  float vy1  = static_cast<float>(dr_tcas_vel_y.get_memory(i));
+
+#ifdef DBG
+  lg.xplm( "warp_to_next_ai():ai x/y/z vel = " + std::to_string(vx1) + ", "
+	   + std::to_string(vy1) + ", "
+	   + std::to_string(vz1) + ", "
+	   + "\n" );
+#endif
+
+  float phi1 = static_cast<float>(dr_tcas_pos_phi.get_memory(i)); // or were these doubles
+  float psi1 = static_cast<float>(dr_tcas_pos_psi.get_memory(i)); // heading
+  float the1 = static_cast<float>(dr_tcas_pos_the.get_memory(i));
+
+  double angle_offset = fmod((psi1 + 180.0), 360);
+  double s =  sin(angle_offset * (double)(M_PI/180));
+  double c = -cos(angle_offset * (double)(M_PI/180));
+  
+  double delta_x = warp_distance * s;
+  double delta_z = warp_distance * c;
+  lx1 += delta_x;
+  lz1 += delta_z;
+
+  dr_override_flightcontrol.set_int( 1 );
+  
+  dr_pos_x.set_float( lx1 );
+  dr_pos_z.set_float( lz1 );
+  //
+  dr_pos_y.set_float( ly1 );
+
+  // velocity (not doing this causes problems... why?)
+  // because we need to put the vx/vz right, reclculate it for the new headingm aybe
+  angle_offset = psi1; // just swap s and c instead?
+  s =  sin(angle_offset * (double)(M_PI/180));
+  c = -cos(angle_offset * (double)(M_PI/180));
+  float user_vel = sqrt( (dr_vel_x.get_float() * dr_vel_x.get_float()) + (dr_vel_z.get_float() * dr_vel_z.get_float()) );
+  
+  //dr_vel_x.set_float( vx1 );
+  dr_vel_x.set_float( user_vel * s );
+  //dr_vel_z.set_float( vz1 );
+  dr_vel_z.set_float( user_vel * c );
+  dr_vel_y.set_float( vy1 ); 
+  
+  // convert AI eulers to Q
+  Eulers ypr = {0, 0, 0};
+  Quaternion q;
+  ypr.psi = psi1;
+  ypr.the = the1;
+  ypr.phi = phi1;
+  EulersToQuaternion(ypr, q); // convert back
+
+  dr_plane_q.set_float( static_cast<float>(q.w), 0 );
+  dr_plane_q.set_float( static_cast<float>(q.x), 1 );
+  dr_plane_q.set_float( static_cast<float>(q.y), 2 );
+  dr_plane_q.set_float( static_cast<float>(q.z), 3 );
+
+  dr_plane_psi.set_float( psi1 );
+  dr_plane_phi.set_float( phi1 );
+  dr_plane_the.set_float( the1 );
+
+  // Do this to align you aircraft, should reset forces!
+
+  dr_override_forces.set_int( 1 );
+  dr_L_total.set_float( 0.0 );
+  dr_M_total.set_float( 0.0 );
+  dr_N_total.set_float( 0.0 );
+
+  dr_override_wing_forces.set_int( 1 );
+  dr_fside_aero.set_float( 0.0 );
+  dr_fnrml_aero.set_float( 0.0 );
+  dr_faxil_aero.set_float( 0.0 );
+  dr_L_aero.set_float( 0.0 );
+  dr_M_aero.set_float( 0.0 );
+  dr_N_aero.set_float( 0.0 );
+  
+  dr_override_engine_forces.set_int( 1 );
+  dr_fside_prop.set_float( 0.0 );
+  dr_fnrml_prop.set_float( 0.0 );
+  dr_faxil_prop.set_float( 0.0 );
+  dr_L_prop.set_float( 0.0 );
+  dr_M_prop.set_float( 0.0 );
+  dr_N_prop.set_float( 0.0 );
+
+  // needed?
+  dr_pos_P.set_float( 0.0 );
+  dr_pos_Q.set_float( 0.0 );
+  dr_pos_R.set_float( 0.0 );
+  dr_pos_Prad.set_float( 0.0 );
+  dr_pos_Qrad.set_float( 0.0 );
+  dr_pos_Rrad.set_float( 0.0 );
+  
+
+  // end orientation
+  dr_override_forces.set_int( 0 );
+  dr_override_wing_forces.set_int( 0 );
+  dr_override_engine_forces.set_int( 0 );
+  
+  dr_override_flightcontrol.set_int( 0 );  
+}
+
 // This could be reversed, warp the AI to me...
 static void warp_to_next_ai() {
 
@@ -913,6 +1049,13 @@ int toggle_warp_to_prev_ai_handler( XPLMCommandRef inCommand, XPLMCommandPhase i
   return 0;
 }
 
+int toggle_warp_to_closest_ai_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    warp_to_closest_ai();
+  }
+  return 0;
+}
+
 // ----
 
 PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
@@ -987,6 +1130,9 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   toggle_warp_to_prev_ai_cmd = XPLMCreateCommand("durian/xlabel/warp_to_prev_ai", "Warp user aircraft to previous AI aircraft");
   XPLMRegisterCommandHandler(toggle_warp_to_prev_ai_cmd, toggle_warp_to_prev_ai_handler, 0, (void *)0);
 
+    toggle_warp_to_closest_ai_cmd = XPLMCreateCommand("durian/xlabel/warp_to_closest_ai", "Warp user aircraft to closest AI aircraft");
+  XPLMRegisterCommandHandler(toggle_warp_to_closest_ai_cmd, toggle_warp_to_closest_ai_handler, 0, (void *)0);
+
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
 
@@ -1006,6 +1152,7 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_next_ai_cmd, toggle_warp_to_next_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_prev_ai_cmd, toggle_warp_to_prev_ai_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_warp_to_closest_ai_cmd, toggle_warp_to_closest_ai_handler, 0, (void *)0);
   XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
   XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);
 

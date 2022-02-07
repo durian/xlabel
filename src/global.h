@@ -33,6 +33,7 @@ namespace XLABEL {
   extern XPLMCommandRef toggle_units_cmd;
   extern XPLMCommandRef toggle_warp_to_next_ai_cmd;
   extern XPLMCommandRef toggle_warp_to_prev_ai_cmd;
+  extern XPLMCommandRef toggle_warp_to_closest_ai_cmd;
   extern bool show_ac_label;
   extern bool show_ap_label;
   extern int  label_kind;
