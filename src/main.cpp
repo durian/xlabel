@@ -39,6 +39,8 @@
 #include "global.h"
 #include "geohash.h"
 
+#include "toml.h"
+
 using namespace XLABEL;
 
 /*
@@ -50,10 +52,22 @@ DRefFloatArray dr_tcas_pos_lon{"sim/cockpit2/tcas/targets/position/lon"};
 DRefFloatArray dr_tcas_pos_ele{"sim/cockpit2/tcas/targets/position/ele"};
 DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
 DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
+
+sim/flightmodel/ground/plugin_ground_center	float[3]	y	meters	Location of a pt on the ground in local coords
 */
 
 std::vector<poi> pois;
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
+
+float height(double x, double y, double z) {
+  XPLMProbeInfo_t info = { 0 };
+  info.structSize = sizeof(info);  
+  // If we have a hit then return Y coordinate
+  if (XPLMProbeTerrainXYZ( hProbe, x, y, z, &info) == xplm_ProbeHitTerrain) {
+    return info.locationY;
+  }
+  return -1.0;
+}
 
 // For warp (special DEG_TO_RAD!)
 #define DEG_TO_RAD_2 M_PI / 360.0
@@ -361,7 +375,12 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 		     }
 		     );
   */
-  
+
+  float screen_w = (float)dr_screen_width.get_int();
+  float screen_h = (float)dr_screen_height.get_int();
+  float half_width  = 10;
+  float half_height = 10;
+
   for ( auto& poi : pois) { // break when max_shown are displayed
     
     double plat = poi.lat; //dr_pos_latitude.get_double();
@@ -415,10 +434,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       acf_ndc[0] *= acf_ndc[3];
       acf_ndc[1] *= acf_ndc[3];
       acf_ndc[2] *= acf_ndc[3];
-      
-      float screen_w = (float)dr_screen_width.get_int();
-      float screen_h = (float)dr_screen_height.get_int();
-      
+            
       float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
       int indent = shown_counter % 3;
@@ -447,9 +463,9 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 			     1 /* do depth testing */,
 			     0 /* no depth writing */
 			     );
+	
 	glColor3f(0, 0, 1); // blue
-	float half_width  = 10;
-	float half_height = 10;
+
 	glBegin(GL_LINE_LOOP);
 	{
 	  // final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
@@ -466,9 +482,9 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 	  glVertex2f(final_x, final_y);
 	}
 	glEnd();
-      }
+      } // true
       
-    }
+    } // acf_ndc[3] > 0
     
     if ( --shown_counter <= 0 ) {
       break;
@@ -477,6 +493,48 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   } // for
   
   return 1;
+}
+
+static void warp_forwards() {
+
+  // sim/flightmodel/ground/plugin_ground_center? aray, float, 3 ?
+  // get agl or so
+  float ground_y = dr_plugin_ground_center.get_float(1);
+  float user_y   = dr_pos_y.get_float();
+  float diff_y   = user_y - ground_y;
+  
+  float user_x  = dr_pos_x.get_float();
+  float user_z  = dr_pos_z.get_float();
+
+  float h = height(user_x, user_y, user_z);
+  float reference_h = user_y - h;
+  //  float h = height(dr_plane_lx, dr_plane_ly, dr_plane_lz); // on ground
+  //  reference_h = dr_plane_ly - h;
+  //      dr_plane_ly = h + reference_h; // from x-slew
+  
+  float user_vx = dr_vel_x.get_float();
+  float user_vz = dr_vel_z.get_float();
+
+  float vel = sqrt( (user_vx*user_vx) + (user_vz*user_vz) );
+  float dir = dr_plane_psi.get_float();
+
+  double s =  sin(dir * (double)(M_PI/180));
+  double c = -cos(dir * (double)(M_PI/180));
+
+  float delta_x = s * 1000.0; // 1000m
+  float delta_z = c * 1000.0;
+
+  dr_pos_x.set_float( user_x + delta_x );
+  dr_pos_z.set_float( user_z + delta_z );
+
+  // adjust agl
+  //ground_y = dr_plugin_ground_center.get_float(1); // diff from first measurement?
+  //dr_pos_y.set_float( ground_y + diff_y );
+  user_x = dr_pos_x.get_float();
+  user_z = dr_pos_z.get_float();
+  user_y = dr_pos_y.get_float();
+  h = height(user_x, user_y, user_z);
+  dr_pos_y.set_float( h + reference_h );
 }
 
 static void warp_to_closest_ai() {
@@ -500,12 +558,12 @@ static void warp_to_closest_ai() {
     float lx   = static_cast<float>(dr_tcas_pos_x.get_memory(i)); 
     float lz   = static_cast<float>(dr_tcas_pos_z.get_memory(i));
     float dist = sqrt( ((user_x-lx)*(user_x-lx)) + ((user_z-lz)*(user_z-lz)) );
-    if ( dist > 500 ) { // if too close, take another
+    //if ( dist > 500 ) { // if too close, take another
       if ( dist < max_dist ) {
 	max_dist = dist;
 	closest_idx = i;
       }
-    }
+      //}
   }
 
   int i = closest_idx;
@@ -551,7 +609,8 @@ static void warp_to_closest_ai() {
   s =  sin(angle_offset * (double)(M_PI/180));
   c = -cos(angle_offset * (double)(M_PI/180));
   float user_vel = sqrt( (dr_vel_x.get_float() * dr_vel_x.get_float()) + (dr_vel_z.get_float() * dr_vel_z.get_float()) );
-  
+
+  // We can also match velocity of the target AI (vx1/vz1)
   //dr_vel_x.set_float( vx1 );
   dr_vel_x.set_float( user_vel * s );
   //dr_vel_z.set_float( vz1 );
@@ -1024,6 +1083,7 @@ int toggle_ap_smoker_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase
   return 0;
 }
 
+// Update the root toml directly, and write on exit?
 int toggle_units_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     if ( units == 0 ) {
@@ -1052,6 +1112,13 @@ int toggle_warp_to_prev_ai_handler( XPLMCommandRef inCommand, XPLMCommandPhase i
 int toggle_warp_to_closest_ai_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     warp_to_closest_ai();
+  }
+  return 0;
+}
+
+int toggle_warp_forwards_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    warp_forwards();
   }
   return 0;
 }
@@ -1130,14 +1197,73 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   toggle_warp_to_prev_ai_cmd = XPLMCreateCommand("durian/xlabel/warp_to_prev_ai", "Warp user aircraft to previous AI aircraft");
   XPLMRegisterCommandHandler(toggle_warp_to_prev_ai_cmd, toggle_warp_to_prev_ai_handler, 0, (void *)0);
 
-    toggle_warp_to_closest_ai_cmd = XPLMCreateCommand("durian/xlabel/warp_to_closest_ai", "Warp user aircraft to closest AI aircraft");
+  toggle_warp_to_closest_ai_cmd = XPLMCreateCommand("durian/xlabel/warp_to_closest_ai", "Warp user aircraft to closest AI aircraft");
   XPLMRegisterCommandHandler(toggle_warp_to_closest_ai_cmd, toggle_warp_to_closest_ai_handler, 0, (void *)0);
+
+  toggle_warp_forwards_cmd = XPLMCreateCommand("durian/xlabel/warp_forwards", "Warp user forwards");
+  XPLMRegisterCommandHandler(toggle_warp_forwards_cmd, toggle_warp_forwards_handler, 0, (void *)0);
 
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
 
   XPLMRegisterFlightLoopCallback(flight_loop, 10, NULL);
   XPLMRegisterFlightLoopCallback(smoker_loop, -1, NULL);
+
+  // test toml
+  std::string tomlfile = std::string(filebase) + sep + "xlabel.toml";
+  lg.xplm( tomlfile + "\n" );
+
+  std::ifstream ifs( tomlfile );
+  if ( ! ifs ) {
+    lg.xplm( "ERROR: tomlfile not found.\n" ); // pr will fall through?
+    // Create new file
+    std::ofstream file( tomlfile.c_str(), std::ios::out );
+    if ( file ) {
+      std::ostringstream ofs;
+      toml::Table root;
+    
+      toml::Table general_Value = toml::Table();
+      general_Value["units"] = 1;
+      general_Value["warp_distance"] = 200; // m/f depending on units?
+      general_Value["match_orientation"] = 1;
+      general_Value["airport_smoker"] = "xlabel.pss";
+      
+      toml::Table debug_Value = toml::Table();
+      debug_Value["verbose"] = 100;
+      debug_Value["file"] = false;
+      
+      root["general"] = general_Value;
+      root["debug"] = debug_Value;
+      
+      file << root;
+      file.close();
+      lg.xplm( ofs.str() );
+    }
+  } else { // file exists
+    toml::ParseResult pr = toml::parse( ifs );
+    
+    if ( pr.valid() ) {
+      lg.xplm( tomlfile + " is valid\n" );
+      // pr.value is the parsed value.
+      const toml::Value& v = pr.value;
+      const toml::Value* x = v.find("general.useraircraft");
+      if (x && x->is<std::string>()) {
+	lg.xplm( x->as<std::string>() + "\n" );
+      }
+      if (x && x->is<int>()) {
+	lg.xplm( std::to_string(x->as<int>()) + "\n" );
+      }
+      // lg.xplm( std::to_string(v.get<int>("general.useraircraft")) + "\n" ); // crashes if not found!
+      
+      std::ostringstream s;
+      v.writeFormatted( &s, toml::FormatFlag::FORMAT_INDENT );
+      lg.xplm( s.str() );
+    } else {
+      // not a valid toml file
+      lg.xplm( "ERROR: tomlfile not valid.\n" );      
+      // Create new file? do not want to overwrite a user file...
+    }
+  }
   
   return 1;
 }
@@ -1153,6 +1279,7 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_warp_to_next_ai_cmd, toggle_warp_to_next_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_prev_ai_cmd, toggle_warp_to_prev_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_closest_ai_cmd, toggle_warp_to_closest_ai_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_warp_forwards_cmd, toggle_warp_forwards_handler, 0, (void *)0);
   XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
   XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);
 
@@ -1318,12 +1445,14 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 
   // selection sort, https://www.softwaretestinghelp.com/sorting-techniques-in-cpp/ ?
 
+  lg.xplm("SORT START\n");
   std::partial_sort( pois.begin(), pois.begin() + max_shown, pois.end(),
 		     [p](const poi& lhs, const poi& rhs) {
 		       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
 		     }
 		     );
-
+  lg.xplm("SORT END\n");
+  
   /*
   std::sort( begin(pois),
 	     end(pois),
@@ -1333,6 +1462,7 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 	     );
   */
 
+#if 0
   int c = 10;
   for ( auto& poi : pois) {
 
@@ -1349,7 +1479,7 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
       break;
     }
   }
-  
+#endif
   
   return 1; // 1 sec again...
 }

@@ -36,6 +36,7 @@ namespace XLABEL {
   XPLMCommandRef toggle_warp_to_next_ai_cmd;
   XPLMCommandRef toggle_warp_to_prev_ai_cmd;
   XPLMCommandRef toggle_warp_to_closest_ai_cmd;
+  XPLMCommandRef toggle_warp_forwards_cmd;
   bool show_ac_label = false;
   bool show_ap_label = false;
   int  label_kind = 0;
@@ -75,6 +76,8 @@ namespace XLABEL {
   DRefFloat dr_plane_psi{"sim/flightmodel/position/true_psi"}; // just psi in opengl display?
   DRefFloat dr_plane_the{"sim/flightmodel/position/true_theta"};
   DRefFloat dr_plane_phi{"sim/flightmodel/position/phi"};
+
+  DRefFloatArray dr_plugin_ground_center{"sim/flightmodel/ground/plugin_ground_center"};
   
   DRefDouble dr_pos_latitude{"sim/flightmodel/position/latitude"};
   DRefDouble dr_pos_longitude{"sim/flightmodel/position/longitude"};

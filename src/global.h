@@ -34,6 +34,7 @@ namespace XLABEL {
   extern XPLMCommandRef toggle_warp_to_next_ai_cmd;
   extern XPLMCommandRef toggle_warp_to_prev_ai_cmd;
   extern XPLMCommandRef toggle_warp_to_closest_ai_cmd;
+  extern XPLMCommandRef toggle_warp_forwards_cmd;
   extern bool show_ac_label;
   extern bool show_ap_label;
   extern int  label_kind;
@@ -71,6 +72,7 @@ namespace XLABEL {
   extern DRefFloat dr_vel_y;
   extern DRefFloat dr_vel_z;
   extern DRefFloatArray dr_plane_q;
+  extern DRefFloatArray dr_plugin_ground_center;
   
   extern DRefDouble dr_pos_latitude;
   extern DRefDouble dr_pos_longitude;
