@@ -1136,9 +1136,11 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   XPLMEnableFeature("XPLM_USE_NATIVE_PATHS", 1);  
   XPLMEnableFeature("XPLM_USE_NATIVE_WIDGET_WINDOWS", 1);
 
-  encode_test();
-  decode_test();
-  neighbour_test();
+  /*
+    encode_test();
+    decoqde_test();
+    neighbour_test();
+  */
   
   char filebase[255];
   //XPLMGetSystemPath(filebase); // Locate the X-System directory
@@ -1291,7 +1293,9 @@ PLUGIN_API void	XPluginStop(void) {
     s->deinstantiate();
   }
   smokers.clear();
-  delete pss_obj;
+  if ( pss_obj ) {
+    delete pss_obj;
+  }
 
   // POIS
   pois.clear();
