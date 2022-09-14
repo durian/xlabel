@@ -1089,11 +1089,7 @@ int toggle_ap_smoker_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase
 // Update the root toml directly, and write on exit?
 int toggle_units_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
-    if ( units == 0 ) {
-      units = 1; // maybe more than 1 later
-    } else {
-      units = 0;
-    }
+    units = (++units % 3);
   }
   return 0;
 }

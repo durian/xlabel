@@ -40,7 +40,7 @@ namespace XLABEL {
   bool show_ac_label = false;
   bool show_ap_label = false;
   int  label_kind = 0;
-  int  units = 0; // 0=metric, 1=feet/knots/nm
+  int  units = 1; // 0=metric, 1=feet/knots/nm, 2=feet/kn/FL
     
   DRefInt dr_tcas_num_acf{"sim/cockpit2/tcas/indicators/tcas_num_acf"};
   DRefInt dr_override_TCAS{"sim/operation/override/override_TCAS"};
@@ -355,22 +355,33 @@ namespace XLABEL {
   }
 
   void make_spd_str( float v_msc, char* buffer, int units ) {
-    sprintf( buffer, "%i kn", int(v_msc*1.943844) );
+    if ( units == 0 ) { // metric
+      sprintf( buffer, "%i kph", int(v_msc*3.6) );
+    } else {
+      sprintf( buffer, "%i kn", int(v_msc*1.943844) );
+    } 
   }
 
   void make_alt_str( float alt_m, char* buffer, int units ) {
-    if ( units == 0 ) {
+    if ( units == 0 ) {  // metric
       int m = int(alt_m);
       if ( m > 1000 ) {
 	m = (m + 5) / 10 * 10;
       }
       sprintf( buffer, "%i m", m );
-    } else {
+    } else if ( units == 1 ) { // imperial
       int ft = int(alt_m * 3.28084);
       if ( ft > 1000 ) {
 	ft = (ft + 50) / 100 * 100;
       }
       sprintf( buffer, "%i ft", ft );
+    } else { // FL
+      int ft = int(alt_m * 3.28084);
+      if ( ft > 1000 ) {
+	ft = (ft + 50) / 100 * 100;
+      }
+      ft = int(ft / 100);
+      sprintf( buffer, "FL%03i", ft );
     }
   }
 
