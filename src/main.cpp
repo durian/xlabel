@@ -189,7 +189,7 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   char dist_buf[32];
   char alt_buf[32];
   char spd_buf[32];
-  
+
   for ( auto i = 1; i < ai; i++ ) { // skip 0, it is user's plane, only when at a distance?
     float lx  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
     float lz  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
@@ -223,7 +223,7 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 
       float dist = sqrt( dx*dx + dz*dz ); // there is a tcas / relative_distance_mtrs dataref
 
-      if ( dist < 200 * 1000 ) { // only < 200 kms
+      if ( dist < 100 * 1000 ) { // only < 100 kms
 
 	char v_spd = '-';
 	if ( dr_vertical_speed.get_memory(i) > 0.5 ) {
@@ -1017,14 +1017,16 @@ static void smoke_airports() {
     }
 
     Smoker *s = new Smoker();
-    s->load_obj( pss_obj->path ); // copy from the global one
-    smokers.push_back( s );
+    if ( s->load_obj( pss_obj->path ) ) {; // copy from the global one
     
-    lg.xplm( "pss_obj->instantiate();\n");
-    s->instantiate();
-    lg.xplm( "pss_obj->set_pos();\n");
-    s->set_pos( poi_x, poi_y, poi_z );
-    lg.xplm( "pss_obj->set_pos() ready;\n");
+      smokers.push_back( s );
+    
+      lg.xplm( "pss_obj->instantiate();\n");
+      s->instantiate();
+      lg.xplm( "pss_obj->set_pos();\n");
+      s->set_pos( poi_x, poi_y, poi_z );
+      lg.xplm( "pss_obj->set_pos() ready;\n");
+    }
     
     if ( --shown_counter <= 0 ) {
       break;
@@ -1051,7 +1053,7 @@ int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
     lg.xplm( "pss_obj->instantiate();\n");
     s->instantiate();
     lg.xplm( "pss_obj->set_pos();\n");
-    s->set_pos( -4, 1, 0 ); // left wing, 1m up
+    s->set_pos( -4, 1, 0 ); // left wing, 1m up, CoG
     lg.xplm( "pss_obj->set_pos() ready;\n");
 
     s = new Smoker();
@@ -1061,7 +1063,7 @@ int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
     lg.xplm( "pss_obj->instantiate();\n");
     s->instantiate();
     lg.xplm( "pss_obj->set_pos();\n");
-    s->set_pos( 4, 1, 0 ); // right wing, 1m up
+    s->set_pos( 4, 1, 0 ); // right wing, 1m up, CoG
     lg.xplm( "pss_obj->set_pos() ready;\n");
     */
   }
