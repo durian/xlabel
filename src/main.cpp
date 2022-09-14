@@ -244,7 +244,8 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 	make_dist_str( dist, dist_buf, units );
 	make_spd_str( v_msc, spd_buf, units );
 	make_alt_str( ele, alt_buf, units );
-	sprintf( buffer, "%i | %s | %s | %s | %c", i, dist_buf, spd_buf, alt_buf, v_spd );
+	// For compatibility with A-B-C, we use    i+1 (user's AC is 1, not zero)
+	sprintf( buffer, "%i | %s | %s | %s | %c", i+1, dist_buf, spd_buf, alt_buf, v_spd );
 	//lg.xplm( std::string(buffer)+"\n" );
 	int len = strlen(buffer);
 	
@@ -1447,13 +1448,15 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 
   // selection sort, https://www.softwaretestinghelp.com/sorting-techniques-in-cpp/ ?
 
-  lg.xplm("SORT START\n");
-  std::partial_sort( pois.begin(), pois.begin() + max_shown, pois.end(),
-		     [p](const poi& lhs, const poi& rhs) {
-		       return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
-		     }
-		     );
-  lg.xplm("SORT END\n");
+  if ( pois.size() > 0 ) {
+    lg.xplm("SORT START\n");
+    std::partial_sort( pois.begin(), pois.begin() + max_shown, pois.end(),
+		       [p](const poi& lhs, const poi& rhs) {
+			 return dist_latlon(p.lat, p.lon, lhs.lat, lhs.lon) < dist_latlon(p.lat, p.lon, rhs.lat, rhs.lon);
+		       }
+		       );
+    lg.xplm("SORT END\n");
+  }
   
   /*
   std::sort( begin(pois),
