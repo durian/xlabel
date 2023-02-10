@@ -253,9 +253,10 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 	float box_x = final_x + 12; // We put box to right
 	XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8); // slow?
 	XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
+	//XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Proportional);
 	
 	// draw the label higer, and a small green line to the final_x and final_y points?
-	
+	if ( false ) {
 	XPLMSetGraphicsState(
 			     0 /* no fog */,
 			     0 /* 0 texture units */,
@@ -284,7 +285,7 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 	  glVertex2f(final_x, final_y);
 	}
 	glEnd();
-	
+	}
       } // dist
     } 
   }
@@ -454,7 +455,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
       XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
       XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
 
-      if ( true ) {
+      if ( false ) {
 	XPLMSetGraphicsState(
 			     0 /* no fog */,
 			     0 /* 0 texture units */,

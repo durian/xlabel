@@ -23,9 +23,9 @@ endif()
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS YES CACHE BOOL "Export all symbols")
 
 # Set include directories used by our code and dependencies.
-include_directories("${CMAKE_SOURCE_DIR}/XPSDK302/CHeaders/Widgets")
-include_directories("${CMAKE_SOURCE_DIR}/XPSDK302/CHeaders/Wrappers")
-include_directories("${CMAKE_SOURCE_DIR}/XPSDK302/CHeaders/XPLM")
+include_directories("${CMAKE_SOURCE_DIR}/XPSDK400/CHeaders/Widgets")
+include_directories("${CMAKE_SOURCE_DIR}/XPSDK400/CHeaders/Wrappers")
+include_directories("${CMAKE_SOURCE_DIR}/XPSDK400/CHeaders/XPLM")
 include_directories("${CMAKE_SOURCE_DIR}/WinSDK/Include")
 include_directories("${CMAKE_SOURCE_DIR}")
 include_directories("${CMAKE_SOURCE_DIR}/")
@@ -37,10 +37,10 @@ endif ()
 
 # Specify library search locations.
 if (WIN32)
-    list(APPEND CMAKE_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/XPSDK302/Libraries/Win")
+    list(APPEND CMAKE_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/XPSDK400/Libraries/Win")
     list(APPEND CMAKE_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/WinSDK/Lib/x64")
 elseif (APPLE)
-    list(APPEND CMAKE_FRAMEWORK_PATH "${CMAKE_SOURCE_DIR}/XPSDK302/Libraries/Mac")
+    list(APPEND CMAKE_FRAMEWORK_PATH "${CMAKE_SOURCE_DIR}/XPSDK400/Libraries/Mac")
 elseif (UNIX)
 
 endif ()
