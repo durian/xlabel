@@ -1038,36 +1038,45 @@ static void smoke_airports() {
 
 }
 
+void add_user_smoke() {
+  // draw an object at plane's pos.
+  
+  float px = dr_pos_x.get_float();
+  float py = dr_pos_y.get_float();
+  float pz = dr_pos_z.get_float();
+  
+  Smoker* s = new Smoker();
+  s->load_obj( pss_obj->path ); // copy from the global one
+  s->mode = 1;
+  smokers.push_back( s );
+  lg.xplm( "pss_obj->instantiate();\n");
+  s->instantiate();
+  lg.xplm( "pss_obj->set_pos();\n");
+  s->set_pos( -4, 1, 0 ); // left wing, 1m up, CoG
+  lg.xplm( "pss_obj->set_pos() ready;\n");
+  
+  s = new Smoker();
+  s->load_obj( pss_obj->path ); // copy from the global one
+  s->mode = 1;
+  smokers.push_back( s );
+  lg.xplm( "pss_obj->instantiate();\n");
+  s->instantiate();
+  lg.xplm( "pss_obj->set_pos();\n");
+  s->set_pos( 4, 1, 0 ); // right wing, 1m up, CoG
+  lg.xplm( "pss_obj->set_pos() ready;\n");
+}
+
+void remove_user_smoke() {
+  for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
+    Smoker *s = *si;
+    s->deinstantiate();
+  }
+  smokers.clear();  
+}
+
 int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
-    show_ac_label = ( ! show_ac_label );
-  
-    // draw an object at plane's pos.
-    /*
-    float px = dr_pos_x.get_float();
-    float py = dr_pos_y.get_float();
-    float pz = dr_pos_z.get_float();
-
-    Smoker* s = new Smoker();
-    s->load_obj( pss_obj->path ); // copy from the global one
-    s->mode = 1;
-    smokers.push_back( s );
-    lg.xplm( "pss_obj->instantiate();\n");
-    s->instantiate();
-    lg.xplm( "pss_obj->set_pos();\n");
-    s->set_pos( -4, 1, 0 ); // left wing, 1m up, CoG
-    lg.xplm( "pss_obj->set_pos() ready;\n");
-
-    s = new Smoker();
-    s->load_obj( pss_obj->path ); // copy from the global one
-    s->mode = 1;
-    smokers.push_back( s );
-    lg.xplm( "pss_obj->instantiate();\n");
-    s->instantiate();
-    lg.xplm( "pss_obj->set_pos();\n");
-    s->set_pos( 4, 1, 0 ); // right wing, 1m up, CoG
-    lg.xplm( "pss_obj->set_pos() ready;\n");
-    */
+    show_ac_label = ( ! show_ac_label );    
   }
   
   return 0;
@@ -1164,7 +1173,7 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
 
   // Load a particle object. Just one at the moment.
   std::string pss_obj_filename = std::string(filebase) + sep + "xlabel.obj";
-  lg.xplm( pss_obj_filename + "\n" );
+  lg.xplm( "pss_obj_filename: " + pss_obj_filename + "\n" );
   pss_obj = new Smoker();
   pss_obj->load_obj( pss_obj_filename );
   if ( ! pss_obj ) {
@@ -1298,6 +1307,7 @@ PLUGIN_API void	XPluginStop(void) {
   pois.clear();
   show_ac_label = 0;
   show_ap_label = 0;
+  show_ua_smoke = 0;
   lg.xplm( "XPluginStop(void) END.\n" );
 }
 

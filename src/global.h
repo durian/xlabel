@@ -30,6 +30,7 @@ namespace XLABEL {
   extern XPLMCommandRef toggle_ac_label_cmd;
   extern XPLMCommandRef toggle_ap_label_cmd;
   extern XPLMCommandRef toggle_ap_smoker_cmd;
+  extern XPLMCommandRef toggle_ua_smoker_cmd;
   extern XPLMCommandRef toggle_units_cmd;
   extern XPLMCommandRef toggle_warp_to_next_ai_cmd;
   extern XPLMCommandRef toggle_warp_to_prev_ai_cmd;
@@ -37,6 +38,7 @@ namespace XLABEL {
   extern XPLMCommandRef toggle_warp_forwards_cmd;
   extern bool show_ac_label;
   extern bool show_ap_label;
+  extern bool show_ua_smoke;
   extern int  label_kind;
   extern int  units;
   

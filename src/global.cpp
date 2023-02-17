@@ -32,6 +32,7 @@ namespace XLABEL {
   XPLMCommandRef toggle_ac_label_cmd;
   XPLMCommandRef toggle_ap_label_cmd;
   XPLMCommandRef toggle_ap_smoker_cmd;
+  XPLMCommandRef toggle_ua_smoker_cmd;
   XPLMCommandRef toggle_units_cmd;
   XPLMCommandRef toggle_warp_to_next_ai_cmd;
   XPLMCommandRef toggle_warp_to_prev_ai_cmd;
@@ -39,6 +40,7 @@ namespace XLABEL {
   XPLMCommandRef toggle_warp_forwards_cmd;
   bool show_ac_label = false;
   bool show_ap_label = false;
+  bool show_ua_smoke = false;
   int  label_kind = 0;
   int  units = 1; // 0=metric, 1=feet/knots/nm, 2=feet/kn/FL
     
