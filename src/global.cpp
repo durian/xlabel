@@ -32,7 +32,7 @@ namespace XLABEL {
   XPLMCommandRef toggle_ac_label_cmd;
   XPLMCommandRef toggle_ap_label_cmd;
   XPLMCommandRef toggle_ap_smoker_cmd;
-  XPLMCommandRef toggle_ua_smoker_cmd;
+  XPLMCommandRef toggle_ua_smoke_cmd;
   XPLMCommandRef toggle_units_cmd;
   XPLMCommandRef toggle_warp_to_next_ai_cmd;
   XPLMCommandRef toggle_warp_to_prev_ai_cmd;
