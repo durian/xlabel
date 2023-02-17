@@ -1096,6 +1096,18 @@ int toggle_ap_smoker_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase
   return 0;
 }
 
+int toggle_ua_smoke_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    show_ua_smoke = ( ! show_ua_smoke );
+    if ( show_ua_smoke ) {
+      add_user_smoke();
+    } else {
+      remove_user_smoke();
+    }
+  }
+  return 0;
+}
+
 // Update the root toml directly, and write on exit?
 int toggle_units_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
@@ -1199,6 +1211,9 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   toggle_ap_smoker_cmd = XPLMCreateCommand("durian/xlabel/toggle_ap_smoker", "Toggle airport/poi smoker");
   XPLMRegisterCommandHandler(toggle_ap_smoker_cmd, toggle_ap_smoker_handler, 0, (void *)0);
 
+  toggle_ua_smoke_cmd = XPLMCreateCommand("durian/xlabel/toggle_ua_smoke", "Toggle user aircraft smoke");
+  XPLMRegisterCommandHandler(toggle_ua_smoke_cmd, toggle_ua_smoke_handler, 0, (void *)0);
+
   toggle_units_cmd = XPLMCreateCommand("durian/xlabel/toggle_units", "Toggle meters/feet");
   XPLMRegisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
 
@@ -1286,6 +1301,7 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_ac_label_cmd, toggle_ac_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_smoker_cmd, toggle_ap_smoker_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(toggle_ua_smoke_cmd, toggle_ua_smoke_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_units_cmd, toggle_units_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_next_ai_cmd, toggle_warp_to_next_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_prev_ai_cmd, toggle_warp_to_prev_ai_handler, 0, (void *)0);
