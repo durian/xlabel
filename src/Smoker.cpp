@@ -80,7 +80,7 @@ namespace XLABEL {
 
   void Smoker::instantiate() {
     if ( ! instance ) {
-      const char * drefs[] = { "sim/time/hobbs_time", NULL }; //  can this be a unique dr for each object?!
+      const char * drefs[] = { NULL }; //  can this be a unique dr for each object?!
       instance = XPLMCreateInstance(this->obj, drefs);
       lg.xplm( "Created instance\n" );
     }
@@ -114,12 +114,56 @@ namespace XLABEL {
 	XPLMInstanceSetPosition(instance, &loc, &dr_val);
       } else if ( mode == 1 ) {
 	// user's plane position/orientation
-	float px = dr_pos_x.get_float();
+	float px = dr_pos_x.get_float(); // updating causes flicker/strange effects?
 	float py = dr_pos_y.get_float();
 	float pz = dr_pos_z.get_float();
 	float phi = dr_plane_phi.get_float() * (M_PI/180); // roll of ac
 	float psi = dr_plane_psi.get_float() * (M_PI/180); // heading
 	float the = dr_plane_the.get_float() * (M_PI/180); // pitch of ac
+	
+	float x_wrl;
+	float y_wrl;
+	float z_wrl;
+	
+	conversion( this->x, this->y, this->z, // offset from plane 0,0,0
+		    phi, psi, the, // plane orientation
+		    px, py, pz,  // plane pos
+		    x_wrl, y_wrl, z_wrl // result
+		    );
+	
+	loc.x = x_wrl;
+	loc.y = y_wrl;
+	loc.z = z_wrl;
+	loc.pitch   = the; // Do we set those?
+	loc.heading = psi;
+	loc.roll    = phi;
+	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
+	//lg.xplm(  buffer );
+	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+      }
+    }
+  }
+  
+  void Smoker::update(float e, float px, float py, float pz, float phi, float psi, float the) {
+    life_time -= e;
+
+    if ( instance ) {
+      XPLMDrawInfo_t loc;
+      loc.structSize = sizeof( loc );
+      static float dr_val = 0;
+      char buffer[256];
+
+      if ( mode == 0 ) { // doesn't need to be done continously! FIXME
+	loc.x = x;
+	loc.y = y;
+	loc.z = z;
+	loc.pitch   = 0;
+	loc.heading = 0;
+	loc.roll    = 0;
+	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
+	//lg.xplm(  buffer );
+	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+      } else if ( mode == 1 ) {
 	
 	float x_wrl;
 	float y_wrl;
@@ -191,7 +235,7 @@ namespace XLABEL {
       if (s->life_time < 0.0) {
 	s->deinstantiate();
 	delete s;
-      s = nullptr;
+	s = nullptr;
       }
     }
   };
@@ -211,14 +255,17 @@ namespace XLABEL {
 						     static_cast<Smoker*>(NULL)
 						     );
     smokers.erase( new_end, smokers.end() );
-    
-    float px = dr_pos_x.get_float();
+
+    float px = dr_pos_x.get_float(); // updating causes flicker/strange effects?
     float py = dr_pos_y.get_float();
     float pz = dr_pos_z.get_float();
-    
+    float phi = dr_plane_phi.get_float() * (M_PI/180); // roll of ac
+    float psi = dr_plane_psi.get_float() * (M_PI/180); // heading
+    float the = dr_plane_the.get_float() * (M_PI/180); // pitch of ac
+
     for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
       Smoker *s = *si;
-      s->update( elapsed );
+      s->update( elapsed, px, py, pz, phi, psi, the );
     }
     
     return -1;

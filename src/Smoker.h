@@ -34,6 +34,7 @@ namespace XLABEL {
     void instantiate();
     void deinstantiate();
     void update(float);
+    void update(float, float, float, float, float, float, float);
     void set_pos(float x, float y, float z);
   };
 
