@@ -80,7 +80,8 @@ namespace XLABEL {
 
   void Smoker::instantiate() {
     if ( ! instance ) {
-      const char * drefs[] = { NULL }; //  can this be a unique dr for each object?!
+      //const char * drefs[] = { NULL }; //  can this be a unique dr for each object?!
+      const char * drefs[] = { "durian/xlabel/shade", NULL }; //  can this be a unique dr for each object?!
       instance = XPLMCreateInstance(this->obj, drefs);
       lg.xplm( "Created instance\n" );
     }
@@ -99,7 +100,13 @@ namespace XLABEL {
     if ( instance ) {
       XPLMDrawInfo_t loc;
       loc.structSize = sizeof( loc );
-      static float dr_val = 0;
+      //static float dr_val = 0; //{0, NULL};
+
+      float *dr_val = new float[1];
+      dr_val[0] = 1.0;
+      //dr_val[1] = NULL;
+
+ 
       char buffer[256];
 
       if ( mode == 0 ) { // doesn't need to be done continously! FIXME
@@ -111,7 +118,7 @@ namespace XLABEL {
 	loc.roll    = 0;
 	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
 	//lg.xplm(  buffer );
-	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+	XPLMInstanceSetPosition(instance, &loc, dr_val);
       } else if ( mode == 1 ) {
 	// user's plane position/orientation
 	float px = dr_pos_x.get_float(); // updating causes flicker/strange effects?
@@ -139,7 +146,7 @@ namespace XLABEL {
 	loc.roll    = phi;
 	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
 	//lg.xplm(  buffer );
-	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+	XPLMInstanceSetPosition(instance, &loc, dr_val);
       }
     }
   }

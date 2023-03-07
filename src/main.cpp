@@ -38,6 +38,7 @@
 #include "Smoker.h"
 #include "global.h"
 #include "geohash.h"
+#include "custom_drefs.h"
 
 #include "toml.h"
 
@@ -1183,6 +1184,9 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
     lg.xplm( " POS AI x/y/z "+std::to_string(lx)+", "+std::to_string(ly)+", "+std::to_string(lz)+"\n" );
   }
 
+  // custom drefs
+  create_custom_drefs();
+  
   // Load a particle object. Just one at the moment.
   std::string pss_obj_filename = std::string(filebase) + sep + "xlabel.obj";
   lg.xplm( "pss_obj_filename: " + pss_obj_filename + "\n" );

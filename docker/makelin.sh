@@ -33,7 +33,7 @@ if [ -f "../src/build-lin/${PLGBASE}.xpl" ]; then
     cp ../src/build-lin/${PLGBASE}.xpl ../bin/${PLGBASE}/${DIR}/
     #
     echo "${GRN}"
-    echo cp ../bin/${PLGBASE}/${DIR}${PLGBASE}.xpl ~/xplane12/Resources/plugins/xlabel/lin_x64/
+    echo cp ../bin/${PLGBASE}/${DIR}${PLGBASE}.xpl ~/xplane12n/Resources/plugins/xlabel/lin_x64/
     echo cp ../bin/${PLGBASE}/${DIR}${PLGBASE}.xpl /a/X-Plane11.50b/Resources/plugins/${PLGBASE}/$DIR
     echo cp ../bin/${PLGBASE}/${DIR}${PLGBASE}.xpl ~/xplane11n/Resources/plugins/${PLGBASE}/$DIR
     #
