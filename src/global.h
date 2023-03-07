@@ -3,6 +3,7 @@
 
 #include "XPLMUtilities.h"
 #include "XPLMInstance.h"
+#include "XPLMPlugin.h"
 
 #include <vector>
 #include <string>
@@ -143,6 +144,9 @@ namespace XLABEL {
   extern XPLMProbeRef hProbe;
   extern XPLMProbeInfo_t info;
 
+  extern XPLMDataRef cdr_shade;
+  extern XPLMDataRef cdr_warp;
+  
   void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
   void poi_to_local(double lat, double lon, double& x, double& y, double& z);
   size_t listify(const std::string& s, std::vector<std::string>& v);

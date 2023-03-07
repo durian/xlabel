@@ -131,6 +131,9 @@ namespace XLABEL {
   int last_ai_ac_index = 0;
   int warp_distance = 200; // meters
 
+  XPLMDataRef cdr_shade = nullptr;
+  XPLMDataRef cdr_warp  = nullptr;
+
   std::map< std::string, std::vector<poi> > poimap;
   
   Smoker *pss_obj  = nullptr;

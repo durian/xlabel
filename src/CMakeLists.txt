@@ -80,6 +80,7 @@ list(APPEND XLABEL_SRCS
   Smoker.cpp
   dr.cpp
   geohash.cpp
+  custom_drefs.cpp
   ) 
 
 add_library(XLABEL SHARED ${XLABEL_SRCS})
