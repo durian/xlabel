@@ -552,24 +552,29 @@ static void warp_to_closest_ai() {
   lg.xplm( "warp_to_closest_ai():get_tcas_positions() = " + std::to_string(ai) + "\n" );
 #endif
   if ( ai < 2 ) {
-    return;
+    //return;
   }
 
-  /*
-  lg.xplm("Testing kd-tree\n");
-  MyPoi query(56.4, 12.8, 0.0, 0, "", "");
-  // 3) Find the 10 nearest neighbours
-  std::vector<int> indices = tree.knnSearch(query, 10000);
-  // 4) Iterate through them and do something useful
-  for (int idx : indices) {
-    const MyPoi& p = poiList[idx];
-    lg.xplm("POI " + p.label + " at (" + std::to_string(p.lat) +
-            ", " + std::to_string(p.lon)
-            // + ", " + std::to_string(p.z)
-            + ")\n");
-  }
-  return;
-  */
+    lg.xplm("Testing kd-tree\n");
+    auto u_x = dr_pos_x.get_float();
+    auto u_z = dr_pos_z.get_float();
+    auto u_y = dr_pos_y.get_float();
+
+    MyPoi query(0, 0, 0, 0, "", "");
+    query.x = u_x;   // your X‐coordinate
+    query.y = u_z;   // your Y‐coordinate
+    query.z = u_y;   // or terrain height, etc.
+
+    // 3) Find the 10 nearest neighbours
+    std::vector<int> indices = tree.knnSearch(query, 10);
+    
+    // 4) Iterate through them and do something useful
+    for (int idx : indices) {
+      const MyPoi& p = poiList[idx];
+      std::cout
+        << "POI " << p.label
+        << " at (" << p.x << ", " << p.y << ", " << p.z << ")\n";
+    }
 
 
 
@@ -1195,15 +1200,52 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   lg.xplm( prefsfile + "\n" );
   (void)read_pois( prefsfile, pois );
 
-  std::vector<MyPoi> poiList;
-  kdt::KDTree<MyPoi> tree;
   if (read_pois_kdt(prefsfile, poiList)) {
     lg.xplm("MyPoi list: " + std::to_string(poiList.size()) + "\n");
     //kdt::KDTree<MyPoi> tree(poiList);
     // or:
     // kdt::KDTree<MyPoi> tree;
     tree.build(poiList);
+
+    auto p = poiList[0];
+    auto x = p[0];
+    auto y = p[1];
+    auto z = p[2];
+    lg.xplm("MyPoi{ lat="   + std::to_string(p.lat)
+            + ", lon=" + std::to_string(p.lon)
+            + ", alt=" + std::to_string(p.alt)
+            + ", z/y/z:" + std::to_string(z)+"/"+std::to_string(y)+"/"+std::to_string(z)
+            + ", dst=" + std::to_string(p.dst)
+            + ", label=" + p.label 
+            + ", hash="  + p.hash 
+            + " }\n");
   }
+
+  /*
+    // 1) Build your tree
+std::vector<MyPoi> poiList;
+// … read and fill poiList …
+kdt::KDTree<MyPoi> tree(poiList);
+
+// 2) Construct a query point in the same 3-D space
+//    Here we only know X and Y; we’ll leave Z = 0 (or whatever altitude you prefer)
+MyPoi query(0, 0, 0, 0, "", "");
+query.x = myX;   // your X‐coordinate
+query.y = myY;   // your Y‐coordinate
+query.z = 0.0;   // or terrain height, etc.
+
+// 3) Find the 10 nearest neighbours
+std::vector<int> indices = tree.knnSearch(query, 100000);
+
+// 4) Iterate through them and do something useful
+for (int idx : indices) {
+    const MyPoi& p = poiList[idx];
+    std::cout
+        << "POI " << p.label
+        << " at (" << p.x << ", " << p.y << ", " << p.z << ")\n";
+}
+
+*/
 
 // ------------------------------------------------------------------------------------
  

@@ -30,7 +30,7 @@ namespace XLABEL {
     std::string geohash;
   };
 
-  struct MyPoi {
+  struct MyGeoPoi {
     static constexpr size_t DIM = 2;
     
     double lat, lon;
@@ -39,7 +39,7 @@ namespace XLABEL {
     std::string label;
     std::string hash;
     
-    MyPoi(double _lat, double _lon, double _alt,
+    MyGeoPoi(double _lat, double _lon, double _alt,
           int _dst, std::string const& _label,
           std::string const& _hash)
       : lat(_lat), lon(_lon), alt(_alt),
@@ -54,6 +54,36 @@ namespace XLABEL {
       }
     }
   };
+
+  // Local coordinate POIs.
+  struct MyPoi {
+    static constexpr size_t DIM = 3;
+
+    double lat, lon, alt;
+    double x,   y,   z;
+    int    dst;
+    std::string label;
+    std::string hash;
+
+    MyPoi(double _lat, double _lon, double _alt,
+          int _dst, std::string const& _label,
+          std::string const& _hash)
+      : lat(_lat), lon(_lon), alt(_alt),
+        dst(_dst), label(_label), hash(_hash)
+    {
+        // your existing helper:
+        poi_to_local(lat, lon, x, y, z);
+    }
+
+    double operator[](size_t i) const {
+        switch (i) {
+            case 0: return x;
+            case 1: return y;
+            case 2: return z;
+            default: throw std::out_of_range("MyPoi::operator[]");
+        }
+    }
+};
 
 
   extern XPLMCommandRef toggle_ac_label_cmd;
