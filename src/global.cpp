@@ -287,7 +287,8 @@ namespace XLABEL {
     return v.size();
   }
 
-  bool read_pois_kdt(const std::string& filename, std::vector<MyPoi>& pois) {
+  // Note MyPoi or MyGeoPoi
+  bool read_pois_kdt(const std::string& filename, std::vector<MyGeoPoi>& pois) {
     std::ifstream file(filename);
     if (!file) {
         lg.xplm("WARNING: can't read pois file.\n");

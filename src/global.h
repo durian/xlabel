@@ -210,7 +210,7 @@ namespace XLABEL {
   size_t listify(const std::string& s, std::vector<std::string>& v);
   float dist_between(const poi& lhs, const poi& rhs);
   double dist_latlon(double lat0, double lon0, double lat1, double lon1);
-  bool read_pois_kdt( const std::string& filename, std::vector<MyPoi>& pois );
+  bool read_pois_kdt( const std::string& filename, std::vector<MyGeoPoi>& pois ); // Note MyPoi or MyGeoPoi
   bool read_pois( const std::string& filename, std::vector<poi>& pois );
   
   void make_dist_str( float dist_m, char* buffer, int units );

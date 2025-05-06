@@ -59,8 +59,11 @@ sim/flightmodel/ground/plugin_ground_center	float[3]	y	meters	Location of a pt o
 */
 
 std::vector<poi> pois;
-std::vector<MyPoi> poiList;
-kdt::KDTree<MyPoi> tree;
+// KD-Tree:
+//std::vector<MyPoi> poiList;
+//kdt::KDTree<MyPoi> tree;
+std::vector<MyGeoPoi> poiList;
+kdt::KDTree<MyGeoPoi> tree;
 
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
 
@@ -556,6 +559,16 @@ static void warp_to_closest_ai() {
   }
 
     lg.xplm("Testing kd-tree\n");
+
+    double uplat = dr_pos_latitude.get_double(); 
+    double uplon = dr_pos_longitude.get_double();
+    MyGeoPoi query(uplat, uplon, 0.0, 0, "", "");
+    auto idxs = tree.knnSearch(query, 10);
+    for (int i : idxs) {
+      auto &p = poiList[i];
+      std::cout << p.label << " @ ("<<p.lat<<","<<p.lon<<")\n";
+    }
+    /*
     auto u_x = dr_pos_x.get_float();
     auto u_z = dr_pos_z.get_float();
     auto u_y = dr_pos_y.get_float();
@@ -575,8 +588,8 @@ static void warp_to_closest_ai() {
         << "POI " << p.label
         << " at (" << p.x << ", " << p.y << ", " << p.z << ")\n";
     }
-
-
+    */
+    return;
 
 
   
@@ -1207,6 +1220,7 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
     // kdt::KDTree<MyPoi> tree;
     tree.build(poiList);
 
+    /*
     auto p = poiList[0];
     auto x = p[0];
     auto y = p[1];
@@ -1218,7 +1232,7 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
             + ", dst=" + std::to_string(p.dst)
             + ", label=" + p.label 
             + ", hash="  + p.hash 
-            + " }\n");
+            + " }\n");*/
   }
 
   /*
