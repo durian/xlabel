@@ -41,6 +41,7 @@
 #include "custom_drefs.h"
 
 #include "toml.h"
+#include "kdtree.h"
 
 using namespace XLABEL;
 
@@ -58,6 +59,9 @@ sim/flightmodel/ground/plugin_ground_center	float[3]	y	meters	Location of a pt o
 */
 
 std::vector<poi> pois;
+std::vector<MyPoi> poiList;
+kdt::KDTree<MyPoi> tree;
+
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
 
 float height(double x, double y, double z) {
@@ -545,12 +549,32 @@ static void warp_to_closest_ai() {
 
   int ai = dr_tcas_num_acf.get_int();
 #ifdef DBG
-  lg.xplm( "warp_to_next_ai():get_tcas_positions() = " + std::to_string(ai) + "\n" );
+  lg.xplm( "warp_to_closest_ai():get_tcas_positions() = " + std::to_string(ai) + "\n" );
 #endif
   if ( ai < 2 ) {
     return;
   }
 
+  /*
+  lg.xplm("Testing kd-tree\n");
+  MyPoi query(56.4, 12.8, 0.0, 0, "", "");
+  // 3) Find the 10 nearest neighbours
+  std::vector<int> indices = tree.knnSearch(query, 10000);
+  // 4) Iterate through them and do something useful
+  for (int idx : indices) {
+    const MyPoi& p = poiList[idx];
+    lg.xplm("POI " + p.label + " at (" + std::to_string(p.lat) +
+            ", " + std::to_string(p.lon)
+            // + ", " + std::to_string(p.z)
+            + ")\n");
+  }
+  return;
+  */
+
+
+
+
+  
   // take closest? Should prolly keep a sorted list? Sort?
   // Or just step through the list!
   int closest_idx   = 1;
@@ -1170,7 +1194,19 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   std::string prefsfile = std::string(filebase) + sep + "xlabel_pois.txt";
   lg.xplm( prefsfile + "\n" );
   (void)read_pois( prefsfile, pois );
-  
+
+  std::vector<MyPoi> poiList;
+  kdt::KDTree<MyPoi> tree;
+  if (read_pois_kdt(prefsfile, poiList)) {
+    lg.xplm("MyPoi list: " + std::to_string(poiList.size()) + "\n");
+    //kdt::KDTree<MyPoi> tree(poiList);
+    // or:
+    // kdt::KDTree<MyPoi> tree;
+    tree.build(poiList);
+  }
+
+// ------------------------------------------------------------------------------------
+ 
   dr_tcas_num_acf.init();
   dr_tcas_pos_x.init();
   dr_tcas_pos_y.init();

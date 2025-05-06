@@ -287,6 +287,42 @@ namespace XLABEL {
     return v.size();
   }
 
+  bool read_pois_kdt(const std::string& filename, std::vector<MyPoi>& pois) {
+    std::ifstream file(filename);
+    if (!file) {
+        lg.xplm("WARNING: can't read pois file.\n");
+        return false;
+    }
+    std::string line;
+    int counter = 0;
+    while (std::getline(file, line)) {
+        if (line.empty() || line[0]=='#') continue;
+        std::vector<std::string> bits;
+        listify(line, bits);
+        if (bits.size() == 5) {
+            try {
+                float lat = std::stof(bits[0]);
+                float lon = std::stof(bits[1]);
+                float alt = std::stof(bits[2]);
+                int   dst = std::stoi(bits[3]);
+                std::string lbl = bits[4];
+                std::string gh;
+                geohash::encode(lat, lon, 6, gh);
+
+               pois.emplace_back(lat, lon, alt, dst, lbl, gh);
+               
+                ++counter;
+            } catch (...) {
+                lg.xplm("Error parsing POI line.\n");
+            }
+        }
+    }
+    lg.xplm(("Read POIs " + std::to_string(counter) + "\n").c_str());
+
+    
+    return true;
+}
+
   bool read_pois( const std::string& filename, std::vector<poi>& pois ) {
 
     std::ifstream file( filename.c_str() );

@@ -15,7 +15,9 @@
 // using namespace XLABEL;
 namespace XLABEL {
 
-    struct poi { 
+  extern void poi_to_local(double lat, double lon, double& x, double& y, double& z);
+  
+  struct poi { 
     double lat;
     double lon;
     float alt;
@@ -27,6 +29,32 @@ namespace XLABEL {
     int    update;
     std::string geohash;
   };
+
+  struct MyPoi {
+    static constexpr size_t DIM = 2;
+    
+    double lat, lon;
+    double alt;            // still available if you need altitude
+    int    dst;
+    std::string label;
+    std::string hash;
+    
+    MyPoi(double _lat, double _lon, double _alt,
+          int _dst, std::string const& _label,
+          std::string const& _hash)
+      : lat(_lat), lon(_lon), alt(_alt),
+        dst(_dst), label(_label), hash(_hash)
+    {}
+    
+    double operator[](size_t i) const {
+      switch (i) {
+      case 0: return lat;
+      case 1: return lon;
+      default: throw std::out_of_range("MyPoi::operator[]");
+      }
+    }
+  };
+
 
   extern XPLMCommandRef toggle_ac_label_cmd;
   extern XPLMCommandRef toggle_ap_label_cmd;
@@ -152,8 +180,9 @@ namespace XLABEL {
   size_t listify(const std::string& s, std::vector<std::string>& v);
   float dist_between(const poi& lhs, const poi& rhs);
   double dist_latlon(double lat0, double lon0, double lat1, double lon1);
+  bool read_pois_kdt( const std::string& filename, std::vector<MyPoi>& pois );
   bool read_pois( const std::string& filename, std::vector<poi>& pois );
-
+  
   void make_dist_str( float dist_m, char* buffer, int units );
   void make_spd_str( float v_msc, char* buffer, int units );
   void make_alt_str( float alt_m, char* buffer, int units );
