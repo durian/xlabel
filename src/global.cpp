@@ -120,6 +120,8 @@ namespace XLABEL {
   DRefFloat dr_pos_Prad{"sim/flightmodel/position/Prad"};//	float	y	rad/sec	The roll rotation rates 
   DRefFloat dr_pos_Qrad{"sim/flightmodel/position/Qrad"};//	float	y	rad/sec	The pitch rotation rates
   DRefFloat dr_pos_Rrad{"sim/flightmodel/position/Rrad"};//	float	y	rad/sec	The yaw rotation rates 
+  
+  DRefInt dr_wt_num_aircraft{"cjs/world_traffic/num_aircraft"};
 
   double plane_prev_lat = 0.0; // Yes, I know, real coords, but in the ocean.
   double plane_prev_lon = 0.0;

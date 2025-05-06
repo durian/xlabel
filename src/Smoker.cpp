@@ -106,9 +106,8 @@ namespace XLABEL {
       dr_val[0] = 1.0;
       //dr_val[1] = NULL;
 
- 
       char buffer[256];
-
+       
       if ( mode == 0 ) { // doesn't need to be done continously! FIXME
 	loc.x = x;
 	loc.y = y;
@@ -157,7 +156,10 @@ namespace XLABEL {
     if ( instance ) {
       XPLMDrawInfo_t loc;
       loc.structSize = sizeof( loc );
-      static float dr_val = 0;
+      //static float dr_val = 0;
+      float *dr_val = new float[1];
+      dr_val[0] = 1.0;
+
       char buffer[256];
 
       if ( mode == 0 ) { // doesn't need to be done continously! FIXME
@@ -169,7 +171,7 @@ namespace XLABEL {
 	loc.roll    = 0;
 	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
 	//lg.xplm(  buffer );
-	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+	XPLMInstanceSetPosition(instance, &loc, dr_val);
       } else if ( mode == 1 ) {
 	
 	float x_wrl;
@@ -190,7 +192,7 @@ namespace XLABEL {
 	loc.roll    = phi;
 	sprintf( buffer, "pos %.2f %.2f %.2f \n", x, y, z );
 	//lg.xplm(  buffer );
-	XPLMInstanceSetPosition(instance, &loc, &dr_val);
+	XPLMInstanceSetPosition(instance, &loc, dr_val);
       }
     }
   }

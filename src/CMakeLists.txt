@@ -69,6 +69,7 @@ add_compile_options(-O3)
 
 # X-Plane plugin
 list(APPEND XLABEL_SRCS
+  kdtree.h
   toml.h
   dr.h
   global.h

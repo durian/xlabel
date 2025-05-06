@@ -191,6 +191,7 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
   char alt_buf[32];
   char spd_buf[32];
 
+  // Use sim/graphics/view/viuew_is_external for user aircraft
   for ( auto i = 1; i < ai; i++ ) { // skip 0, it is user's plane, only when at a distance?
     float lx  = static_cast<float>(dr_tcas_pos_x.get_memory(i)); // or were these doubles
     float lz  = static_cast<float>(dr_tcas_pos_z.get_memory(i));
