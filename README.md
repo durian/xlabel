@@ -47,7 +47,7 @@ Note that if you increase the number and distance, the view becomes cluttered.
 
 ## Kitchensink
 
-The following screen shot shows the labels for Ai aircraft, POIs and a smoke marker on the airport.
+The following screen shot shows the labels for AI aircraft, POIs and a smoke marker on the airport.
 
 ![Screenshot](info/scrot4.jpg)
 
@@ -70,4 +70,4 @@ In `Output/preferences/`, `xlabel.obj` and `xlabel.pss`.
 
 ## Note
 
-SHowing too many labels kills your framerate.
+Showing too many labels kills your framerate.

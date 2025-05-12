@@ -319,7 +319,7 @@ namespace XLABEL {
                
                 ++counter;
             } catch (...) {
-                lg.xplm("Error parsing POI line.\n");
+              lg.xplm("Error parsing POI line "+std::to_string(counter)+".\n");
             }
         }
     }
