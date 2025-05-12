@@ -33,7 +33,8 @@ The following shows a screenshot using a database with Swedish cities.
 ![Screenshot](info/scrot5.png)
 
 Note that if you increase the number and distance, the view becomes cluttered.
-[Screenshot](info/scrot6.png)
+
+![Screenshot](info/scrot6.png)
 
 ## Kitchensink
 
