@@ -19,7 +19,7 @@ Possibility to warp the user aircraft to the first AI aircraft, copying position
 
 # Usage
 
-This plugin has no menu or userinterface. There are eleven commands
+This plugin has no menu or user interface. There are eleven commands
 you can assign to a keyboard key or joystick button. Search for
 "durian/xlabel" in the keyboard assignment menu in X-Plane.
 
@@ -56,9 +56,9 @@ The following screen shot shows the labels for AI aircraft, POIs and a smoke mar
 In `Output/preferences/`, `xlabel_pois.txt`.
 
 ```
-# LAT      LON        ALT DIST  LABEL
-56.292109, 12.854471, 0,   10000, ESTA
-56.338259, 12.895436, 0,    5000, Margretetorp
+# LAT      LON      ALT  DIST   LABEL
+56.29210, 12.85447, 0,   10000, ESTA
+56.33825, 12.89543, 0,    5000, Margretetorp
 ```
 
 The label is shown when your aircraft is closed than `DIST` (meters). The `DIST` can be modified
