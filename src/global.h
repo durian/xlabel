@@ -38,6 +38,9 @@ namespace XLABEL {
     int    dst;
     std::string label;
     std::string hash;
+    double x;
+    double y;
+    double z;
     
     MyGeoPoi(double _lat, double _lon, double _alt,
           int _dst, std::string const& _label,

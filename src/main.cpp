@@ -66,6 +66,7 @@ std::vector<MyGeoPoi> poiList;
 kdt::KDTree<MyGeoPoi> tree;
 
 float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
+float flight_loop_kdt(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon);
 
 float height(double x, double y, double z) {
   XPLMProbeInfo_t info = { 0 };
@@ -314,6 +315,7 @@ poi pois[] = {
 };
 */
 
+// Draw the POIs, DrawCallback1 draws the AI aircraft.
 static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
   // Read the ACF's OpengL coordinates
   
@@ -386,6 +388,159 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
 		     }
 		     );
   */
+
+  float screen_w = (float)dr_screen_width.get_int();
+  float screen_h = (float)dr_screen_height.get_int();
+  float half_width  = 10;
+  float half_height = 10;
+
+  for ( auto& poi : pois) { // break when max_shown are displayed
+    
+    double plat = poi.lat; //dr_pos_latitude.get_double();
+    double plon = poi.lon; //dr_pos_longitude.get_double();
+    float latitude;
+    float longitude;
+    float alt = poi.alt;
+    int max_dist = poi.dst;
+    if ( poi.update == 1 ) { // For init, and made 1 on scenery reload to trigger recalculation. Could be done there
+      poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
+      poi.x = poi_x;
+      poi.y = poi_y;
+      poi_y += alt;
+      poi.z = poi_z;
+      poi.update = 0;
+    } else {
+      poi_x = poi.x;
+      poi_y = poi.y;
+      poi_z = poi.z;
+    }
+    
+    float dx = poi_x - px;
+    float dz = poi_z - pz;
+    float dy = poi_y - py; 
+    //float dist = sqrt( dx*dx + dz*dz ); // should be lat/lon
+    double latlon_dist = dist_latlon(uplat, uplon, plat, plon); // but not exact.... hmmm
+    //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
+    
+    // doesn't work because the first time pois are not initialised so sort doesn't work.
+    if ( latlon_dist >= max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
+      //break;//continue; // skip if too far away // break; // we are sorted
+      continue;
+    }
+
+    float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
+    
+    float acf_wrl[4] = {	
+      (float)poi_x,
+      (float)poi_y,
+      (float)poi_z,
+      1.0f };
+    
+    char buffer[256];
+    
+    // Simulate the OpenGL transformation to get screen coordinates.
+    mult_matrix_vec(acf_eye, mv, acf_wrl);
+    mult_matrix_vec(acf_ndc, proj, acf_eye);
+    
+    if ( acf_ndc[3] >= 0 ) {  // < 0 means behind me
+      acf_ndc[3] = 1.0f / acf_ndc[3];
+      acf_ndc[0] *= acf_ndc[3];
+      acf_ndc[1] *= acf_ndc[3];
+      acf_ndc[2] *= acf_ndc[3];
+            
+      float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
+      float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
+      int indent = shown_counter % 3;
+      if ( dist > 5000 ) {
+	//final_y = screen_h - 34 - (24 * indent); // TEST, puts them on top line. Disabled.
+      }
+      
+      float colWHT[] = { 1.0, 1.0, 1.0 };
+      make_dist_str( dist, dist_buf, units );
+      sprintf( buffer, "%s | %s", poi.name.c_str(), dist_buf ); // POI | 10 nm 
+
+      int len = strlen(buffer);
+      
+      float box_y = final_y + 12 + 10; // We put box above
+      float box_x = final_x + 12; // We put box to right
+      XPLMDrawTranslucentDarkBox(box_x - 5, box_y + 10, box_x + 6*len + 5, box_y - 8);
+      XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
+
+      if ( false ) {
+	XPLMSetGraphicsState(
+			     0 /* no fog */,
+			     0 /* 0 texture units */,
+			     0 /* no lighting */,
+			     0 /* no alpha testing */,
+			     1 /* do alpha blend */,
+			     1 /* do depth testing */,
+			     0 /* no depth writing */
+			     );
+	
+	glColor3f(0, 0, 1); // blue
+
+	glBegin(GL_LINE_LOOP);
+	{
+	  // final_x - 5, final_y + 10, final_x + 6*len + 5, final_y - 8
+	  glVertex2f(box_x - 5,         box_y + 10);
+	  glVertex2f(box_x + 6*len + 5, box_y + 10);
+	  glVertex2f(box_x + 6*len + 5, box_y - 8);
+	  glVertex2f(box_x - 5,         box_y -8);
+	}
+	glEnd();
+	// line to object from box
+	glBegin(GL_LINE_LOOP);
+	{
+	  glVertex2f(box_x-5, box_y-8);
+	  glVertex2f(final_x, final_y);
+	}
+	glEnd();
+      } // true
+      
+    } // acf_ndc[3] > 0
+    
+    if ( --shown_counter <= 0 ) {
+      break;
+    }
+    
+  } // for
+  
+  return 1;
+}
+
+// The KDT POIs.
+static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefcon) {
+  // Read the ACF's OpengL coordinates
+  
+  if ( ! show_ap_label ) {
+    return 1;
+  }
+  if ( pois.size() == 0 ) {
+    //return 1;
+  }
+  
+  float mv[16], proj[16];
+  // Read the model view and projection matrices from this frame
+  dr_matrix_wrl.get_all_ref( &mv[0], 16 );
+  dr_matrix_proj.get_all_ref( &proj[0], 16 );
+  float acf_eye[4], acf_ndc[4];
+
+  // user's plane position
+  float px = dr_pos_x.get_float();
+  float py = dr_pos_y.get_float();
+  float pz = dr_pos_z.get_float();
+  double uplat = dr_pos_latitude.get_double(); 
+  double uplon = dr_pos_longitude.get_double();
+  
+  double poi_x;
+  double poi_y;
+  double poi_z;
+
+  char dist_buf[32];
+  char alt_buf[32];
+  char spd_buf[32];
+
+  auto shown_counter = max_shown;
 
   float screen_w = (float)dr_screen_width.get_int();
   float screen_h = (float)dr_screen_height.get_int();
@@ -1328,8 +1483,10 @@ for (int idx : indices) {
 
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
+  XPLMRegisterDrawCallback(DrawCallback_kdt, xplm_Phase_Window, 0, NULL);// slow
 
-  XPLMRegisterFlightLoopCallback(flight_loop, 10, NULL);
+  //XPLMRegisterFlightLoopCallback(flight_loop, 10, NULL);
+  XPLMRegisterFlightLoopCallback(flight_loop_kdt, 10, NULL);
   XPLMRegisterFlightLoopCallback(smoker_loop, -1, NULL);
 
   // test toml
@@ -1395,6 +1552,7 @@ PLUGIN_API void	XPluginStop(void) {
   lg.xplm( "XPluginStop(void).\n" );
   XPLMUnregisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   XPLMUnregisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);
+  XPLMUnregisterDrawCallback(DrawCallback_kdt, xplm_Phase_Window, 0, NULL);
   XPLMUnregisterCommandHandler(toggle_ac_label_cmd, toggle_ac_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_smoker_cmd, toggle_ap_smoker_handler, 0, (void *)0);
@@ -1404,7 +1562,8 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_warp_to_prev_ai_cmd, toggle_warp_to_prev_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_closest_ai_cmd, toggle_warp_to_closest_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_forwards_cmd, toggle_warp_forwards_handler, 0, (void *)0);
-  XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
+  //XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
+  XPLMUnregisterFlightLoopCallback(flight_loop_kdt, NULL);
   XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);
 
   for ( auto si = smokers.begin(); si != smokers.end(); si++ ) {
@@ -1590,6 +1749,66 @@ float flight_loop(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlig
 	     }
 	     );
   */
+
+#if 0
+  int c = 10;
+  for ( auto& poi : pois) {
+
+    double latlon_dist = dist_latlon(plat, plon, poi.lat, poi.lon);
+    float dx = px - poi.x;
+    float dz = pz - poi.z;
+    float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
+
+#ifdef DBG
+    lg.xplm( "Closest to: "+poi.name+", "+std::to_string(latlon_dist)+", "+std::to_string(dist)+
+	     " "+poi.geohash + "\n" );
+#endif
+    if ( --c <= 0 ) {
+      break;
+    }
+  }
+#endif
+  
+  return 1; // 1 sec again...
+}
+
+// WHat this should do is to fill the poi vector with the nearest, the DrawCallBack
+// function will draw the first 10 of the poi vector.
+float flight_loop_kdt(float inElapsedSinceLastCall, float inElapsedTimeSinceLastFlightLoop, int inCounter, void *inRefcon) {
+
+  (void)inElapsedTimeSinceLastFlightLoop;
+  (void)inCounter;
+  (void)inRefcon;
+
+  double elapsed = inElapsedSinceLastCall;
+
+  if ( ! show_ap_label ) {
+    return 1; // Note, 1 sec
+  }
+
+  // User position.
+  double uplat = dr_pos_latitude.get_double(); 
+  double uplon = dr_pos_longitude.get_double();
+
+  // Ignore altitude.
+  MyGeoPoi query(uplat, uplon, 0.0, 0, "", "");
+  pois.clear();
+  lg.xplm( "----\n" );
+  auto idxs = tree.knnSearch(query, 10);
+  for (int i : idxs) {
+    auto &p = poiList[i];
+    //std::cout << p.label << " @ ("<<p.lat<<","<<p.lon<<")\n";
+
+    // NOTE WE NEED THE LOCAL COORDINATES!
+    poi_to_local(p.lat, p.lon, p.x, p.y, p.z); 
+    
+    pois.push_back( poi{ p.lat, p.lon, 0, 1000, p.label,  p.x, p.y, p.z, 0 } );
+    //pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1, geohash } );
+
+    double latlon_dist = dist_latlon(uplat, uplon, p.lat, p.lon);
+    lg.xplm( "Closest to: "+p.label+", "+std::to_string(latlon_dist) + "\n" );
+  }
+
 
 #if 0
   int c = 10;
