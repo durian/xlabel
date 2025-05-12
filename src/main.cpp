@@ -540,6 +540,7 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
   char alt_buf[32];
   char spd_buf[32];
 
+  // This can prolly be removed because we only get the proper number.
   auto shown_counter = max_shown;
 
   float screen_w = (float)dr_screen_width.get_int();
@@ -571,12 +572,11 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
     //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
     
     // Use cmd to tweak this (add, subtract?)
-    if ( latlon_dist >= max_poi_dist+max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
-      //break;//continue; // skip if too far away // break; // we are sorted
+    if ( latlon_dist >= max_poi_dist+max_dist ) {
       continue;
     }
 
-    float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
+    float dist = sqrt( dx*dx + dz*dz ); // More exact if locally close, but double work.
     
     float acf_wrl[4] = {	
       (float)poi_x,
@@ -600,11 +600,11 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
       int indent = shown_counter % 3;
       if ( dist > 5000 ) {
-	//final_y = screen_h - 34 - (24 * indent); // TEST, puts them on top line. Disabled.
+        //final_y = screen_h - 34 - (24 * indent); // TEST, puts them on top line. Disabled.
       }
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
-      make_dist_str( dist, dist_buf, units );
+      make_dist_str( latlon_dist, dist_buf, units ); // PJB was dist
       sprintf( buffer, "%s | %s", poi.name.c_str(), dist_buf ); // POI | 10 nm 
 
       int len = strlen(buffer);
@@ -615,16 +615,16 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
       XPLMDrawString(colWHT, box_x, box_y-1, buffer, NULL, xplmFont_Basic);
 
       if ( false ) {
-	XPLMSetGraphicsState(
-			     0 /* no fog */,
-			     0 /* 0 texture units */,
-			     0 /* no lighting */,
-			     0 /* no alpha testing */,
-			     1 /* do alpha blend */,
-			     1 /* do depth testing */,
-			     0 /* no depth writing */
-			     );
-	
+        XPLMSetGraphicsState(
+                             0 /* no fog */,
+                             0 /* 0 texture units */,
+                             0 /* no lighting */,
+                             0 /* no alpha testing */,
+                             1 /* do alpha blend */,
+                             1 /* do depth testing */,
+                             0 /* no depth writing */
+                             );
+    
 	glColor3f(0, 0, 1); // blue
 
 	glBegin(GL_LINE_LOOP);
