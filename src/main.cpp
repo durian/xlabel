@@ -516,7 +516,7 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
     return 1;
   }
   if ( pois.size() == 0 ) {
-    //return 1;
+    return 1;
   }
   
   float mv[16], proj[16];
@@ -555,18 +555,13 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
     float longitude;
     float alt = poi.alt;
     int max_dist = poi.dst;
-    if ( poi.update == 1 ) { // For init, and made 1 on scenery reload to trigger recalculation. Could be done there
-      poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
-      poi.x = poi_x;
-      poi.y = poi_y;
-      poi_y += alt;
-      poi.z = poi_z;
-      poi.update = 0;
-    } else {
-      poi_x = poi.x;
-      poi_y = poi.y;
-      poi_z = poi.z;
-    }
+    poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
+    poi.x = poi_x;
+    poi.y = poi_y;
+    poi_y += alt;
+    poi.z = poi_z;
+    poi.update = 0;
+   
     
     float dx = poi_x - px;
     float dz = poi_z - pz;
@@ -1528,10 +1523,10 @@ for (int idx : indices) {
       const toml::Value& v = pr.value;
       const toml::Value* x = v.find("general.useraircraft");
       if (x && x->is<std::string>()) {
-	lg.xplm( x->as<std::string>() + "\n" );
+        lg.xplm( x->as<std::string>() + "\n" );
       }
       if (x && x->is<int>()) {
-	lg.xplm( std::to_string(x->as<int>()) + "\n" );
+        lg.xplm( std::to_string(x->as<int>()) + "\n" );
       }
       // lg.xplm( std::to_string(v.get<int>("general.useraircraft")) + "\n" ); // crashes if not found!
       
@@ -1793,42 +1788,25 @@ float flight_loop_kdt(float inElapsedSinceLastCall, float inElapsedTimeSinceLast
   // Ignore altitude.
   MyGeoPoi query(uplat, uplon, 0.0, 0, "", "");
   pois.clear();
-  lg.xplm( "----\n" );
-  auto idxs = tree.knnSearch(query, 10);
+
+  auto idxs = tree.knnSearch(query, max_shown);
   for (int i : idxs) {
     auto &p = poiList[i];
     //std::cout << p.label << " @ ("<<p.lat<<","<<p.lon<<")\n";
 
+    /* Now done in draw.
     // NOTE WE NEED THE LOCAL COORDINATES!
     poi_to_local(p.lat, p.lon, p.x, p.y, p.z); 
+    */
     
-    pois.push_back( poi{ p.lat, p.lon, 0, 1000, p.label,  p.x, p.y, p.z, 0 } );
-    //pois.push_back( poi{ lat, lon, alt, dst, lbl, 0, 0, 0, 1, geohash } );
-
+    //pois.push_back( poi{ p.lat, p.lon, 0, 1000, p.label,  p.x, p.y, p.z, 0 } );
+    pois.push_back( poi{ p.lat, p.lon, 0, 1000, p.label,  0, 0, 0, 0 } );
+    
+#if 0
     double latlon_dist = dist_latlon(uplat, uplon, p.lat, p.lon);
     lg.xplm( "Closest to: "+p.label+", "+std::to_string(latlon_dist) + "\n" );
-  }
-
-
-#if 0
-  int c = 10;
-  for ( auto& poi : pois) {
-
-    double latlon_dist = dist_latlon(plat, plon, poi.lat, poi.lon);
-    float dx = px - poi.x;
-    float dz = pz - poi.z;
-    float dist = sqrt( dx*dx + dz*dz ); // more exact if locally close
-
-#ifdef DBG
-    lg.xplm( "Closest to: "+poi.name+", "+std::to_string(latlon_dist)+", "+std::to_string(dist)+
-	     " "+poi.geohash + "\n" );
 #endif
-    if ( --c <= 0 ) {
-      break;
-    }
   }
-#endif
-  
   return 1; // 1 sec again...
 }
 
