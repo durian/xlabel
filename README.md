@@ -4,7 +4,10 @@ Draws info about AI aircraft on the screen (on top of everything else).
 
 ![Screenshot](info/scrot1.png)
 
-The box shows the AI aircraft number, the distance in kilometers, or in meters if less than 5 kms, and the altitude difference with your aircraft. The last symbol shows the vertical speed direction of the target plane.
+The box shows the AI aircraft number, the distance in kilometers, or
+in meters if less than 5 kms, and the altitude difference with your
+aircraft. The last symbol shows the vertical speed direction of the
+target plane.
 
 Can display distance to points of interest in a similar manner. This slows down X-plane a lot.
 
@@ -16,7 +19,9 @@ Possibility to warp the user aircraft to the first AI aircraft, copying position
 
 # Usage
 
-This plugin has no menu or userinterface. There are seven commands you can assign to a keyboard key or joystick button. Search for "durian/xlabel" in the keyboard assignment menu in X-Plane.
+This plugin has no menu or userinterface. There are eleven commands
+you can assign to a keyboard key or joystick button. Search for
+"durian/xlabel" in the keyboard assignment menu in X-Plane.
 
  - durian/xlabel/toggle_ac_label: shows the AI aircraft labels
  - durian/xlabel/toggle_ap_label: shows the POI labels
@@ -56,9 +61,13 @@ In `Output/preferences/`, `xlabel_pois.txt`.
 56.338259, 12.895436, 0,    5000, Margretetorp
 ```
 
-The label is shown when your aircraft is closed than `DIST` (meters). 
+The label is shown when your aircraft is closed than `DIST` (meters). The `DIST` can be modified
+with the label distance commands mention earlier.
 
 ## Smoker
 
 In `Output/preferences/`, `xlabel.obj` and `xlabel.pss`.
 
+## Note
+
+SHowing too many labels kills your framerate.
