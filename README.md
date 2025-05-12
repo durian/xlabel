@@ -30,10 +30,10 @@ This plugin has no menu or userinterface. There are seven commands you can assig
 
 The following shows a screenshot using a database with Swedish cities.
 
-![Screenshot](info/scrot5.jpg)
+![Screenshot](info/scrot5.png)
 
 Note that if you increase the number and distance, the view becomes cluttered.
-![Screenshot](info/scrot4.jpg)
+[Screenshot](info/scrot6.png)
 
 ## Kitchensink
 
