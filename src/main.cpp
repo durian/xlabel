@@ -401,7 +401,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float latitude;
     float longitude;
     float alt = poi.alt;
-    int max_dist = poi.dst;
+    int max_poi_dist = poi.dst; // PJB RENAME
     if ( poi.update == 1 ) { // For init, and made 1 on scenery reload to trigger recalculation. Could be done there
       poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
       poi.x = poi_x;
@@ -423,7 +423,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
     
     // doesn't work because the first time pois are not initialised so sort doesn't work.
-    if ( latlon_dist >= max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
+    if ( latlon_dist >= max_poi_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
       //break;//continue; // skip if too far away // break; // we are sorted
       continue;
     }
@@ -554,7 +554,7 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
     float latitude;
     float longitude;
     float alt = poi.alt;
-    int max_dist = poi.dst;
+    int max_poi_dist = poi.dst;
     poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
     poi.x = poi_x;
     poi.y = poi_y;
@@ -570,8 +570,8 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
     double latlon_dist = dist_latlon(uplat, uplon, plat, plon); // but not exact.... hmmm
     //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
     
-    // doesn't work because the first time pois are not initialised so sort doesn't work.
-    if ( latlon_dist >= max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
+    // Use cmd to tweak this (add, subtract?)
+    if ( latlon_dist >= max_poi_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
       //break;//continue; // skip if too far away // break; // we are sorted
       continue;
     }
@@ -746,7 +746,7 @@ static void warp_to_closest_ai() {
   // take closest? Should prolly keep a sorted list? Sort?
   // Or just step through the list!
   int closest_idx   = 1;
-  float max_dist    = 1000000;
+  //float max_dist    = 1000000;
   float user_x      = dr_pos_x.get_float();
   float user_z      = dr_pos_z.get_float();
   bool  res         = get_tcas_positions();
@@ -756,8 +756,8 @@ static void warp_to_closest_ai() {
     float dist = sqrt( ((user_x-lx)*(user_x-lx)) + ((user_z-lz)*(user_z-lz)) );
     //if ( dist > 500 ) { // if too close, take another
       if ( dist < max_dist ) {
-	max_dist = dist;
-	closest_idx = i;
+        max_dist = dist;
+        closest_idx = i;
       }
       //}
   }
@@ -1267,6 +1267,7 @@ void remove_user_smoke() {
   }
   smokers.clear();  
 }
+// TODO a double/half draw distance
 
 int toggle_ac_label_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
@@ -1334,6 +1335,24 @@ int toggle_warp_to_closest_ai_handler( XPLMCommandRef inCommand, XPLMCommandPhas
 int toggle_warp_forwards_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
     warp_forwards();
+  }
+  return 0;
+}
+
+int max_shown_inc_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    if (max_shown < 128) {
+      max_shown += 1;
+    }
+  }
+  return 0;
+}
+
+int max_shown_dec_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    if (max_shown > 1) {
+      max_shown -= 1;
+    }
   }
   return 0;
 }
@@ -1476,8 +1495,14 @@ for (int idx : indices) {
   toggle_warp_forwards_cmd = XPLMCreateCommand("durian/xlabel/warp_forwards", "Warp user forwards");
   XPLMRegisterCommandHandler(toggle_warp_forwards_cmd, toggle_warp_forwards_handler, 0, (void *)0);
 
+  max_shown_inc_cmd = XPLMCreateCommand("durian/xlabel/max_shown_inc", "Show more labels");
+  XPLMRegisterCommandHandler(max_shown_inc_cmd, max_shown_inc_handler, 0, (void *)0);
+
+  max_shown_dec_cmd = XPLMCreateCommand("durian/xlabel/max_shown_dec", "Show less labels");
+  XPLMRegisterCommandHandler(max_shown_dec_cmd, max_shown_dec_handler, 0, (void *)0);
+
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
-  XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
+  //XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
   XPLMRegisterDrawCallback(DrawCallback_kdt, xplm_Phase_Window, 0, NULL);// slow
 
   //XPLMRegisterFlightLoopCallback(flight_loop, 10, NULL);
@@ -1546,7 +1571,7 @@ for (int idx : indices) {
 PLUGIN_API void	XPluginStop(void) {
   lg.xplm( "XPluginStop(void).\n" );
   XPLMUnregisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
-  XPLMUnregisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);
+  //XPLMUnregisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);
   XPLMUnregisterDrawCallback(DrawCallback_kdt, xplm_Phase_Window, 0, NULL);
   XPLMUnregisterCommandHandler(toggle_ac_label_cmd, toggle_ac_label_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_ap_label_cmd, toggle_ap_label_handler, 0, (void *)0);
@@ -1557,6 +1582,8 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_warp_to_prev_ai_cmd, toggle_warp_to_prev_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_to_closest_ai_cmd, toggle_warp_to_closest_ai_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(toggle_warp_forwards_cmd, toggle_warp_forwards_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(max_shown_inc_cmd, max_shown_inc_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(max_shown_dec_cmd, max_shown_dec_handler, 0, (void *)0);
   //XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
   XPLMUnregisterFlightLoopCallback(flight_loop_kdt, NULL);
   XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);

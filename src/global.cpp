@@ -38,6 +38,8 @@ namespace XLABEL {
   XPLMCommandRef toggle_warp_to_prev_ai_cmd;
   XPLMCommandRef toggle_warp_to_closest_ai_cmd;
   XPLMCommandRef toggle_warp_forwards_cmd;
+  XPLMCommandRef max_shown_inc_cmd;
+  XPLMCommandRef max_shown_dec_cmd;
   bool show_ac_label = false;
   bool show_ap_label = false;
   bool show_ua_smoke = false;
@@ -194,6 +196,8 @@ namespace XLABEL {
   XPLMProbeRef hProbe = XPLMCreateProbe(xplm_ProbeY);
   XPLMProbeInfo_t info = { 0 };
 
+  float max_dist = 10000.0; // Needs to be taken from settings.
+  
   void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude) {
     // This is slow.
     float lat = static_cast<float>(plane_lat);
