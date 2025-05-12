@@ -26,6 +26,15 @@ This plugin has no menu or userinterface. There are seven commands you can assig
  - durian/xlabel/warp_to_prev_ai: Warp user aircraft to previous AI aircraft
  - durian/xlabel/warp_to_closest_ai: Warp user aircraft to closest AI aircraft
 
+## POIs
+
+The following shows a screenshot using a database with Swedish cities.
+
+![Screenshot](info/scrot5.jpg)
+
+Note that if you increase the number and distance, the view becomes cluttered.
+![Screenshot](info/scrot4.jpg)
+
 ## Kitchensink
 
 The following screen shot shows the labels for Ai aircraft, POIs and a smoke marker on the airport.
