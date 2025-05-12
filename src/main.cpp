@@ -383,7 +383,7 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
       continue;
     }
 
-    float dist = sqrt( dx*dx + dz*dz ); // More exact if locally close, but double work.
+    ////float dist = sqrt( dx*dx + dz*dz ); // More exact if locally close, but double work.
     
     float acf_wrl[4] = {	
       (float)poi_x,
@@ -406,9 +406,6 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
       float final_x = screen_w * (acf_ndc[0] * 0.5f + 0.5f);
       float final_y = screen_h * (acf_ndc[1] * 0.5f + 0.5f);
       int indent = shown_counter % 3;
-      if ( dist > 5000 ) {
-        //final_y = screen_h - 34 - (24 * indent); // TEST, puts them on top line. Disabled.
-      }
       
       float colWHT[] = { 1.0, 1.0, 1.0 };
       make_dist_str( latlon_dist, dist_buf, units ); // PJB was dist
