@@ -100,6 +100,8 @@ namespace XLABEL {
   extern XPLMCommandRef toggle_warp_forwards_cmd;
   extern XPLMCommandRef max_shown_inc_cmd;
   extern XPLMCommandRef max_shown_dec_cmd;
+  extern XPLMCommandRef max_dist_inc_cmd;
+  extern XPLMCommandRef max_dist_dec_cmd;
   extern bool show_ac_label;
   extern bool show_ap_label;
   extern bool show_ua_smoke;
@@ -183,7 +185,8 @@ namespace XLABEL {
   extern double plane_prev_lon;
 
   extern int max_shown;
-
+  extern float max_dist;
+  
   // for warp
   extern int ai_ac_index;
   extern int last_ai_ac_index;
@@ -209,8 +212,6 @@ namespace XLABEL {
 
   extern XPLMDataRef cdr_shade;
   extern XPLMDataRef cdr_warp;
-
-  extern float max_dist;
   
   void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude);
   void poi_to_local(double lat, double lon, double& x, double& y, double& z);

@@ -40,6 +40,8 @@ namespace XLABEL {
   XPLMCommandRef toggle_warp_forwards_cmd;
   XPLMCommandRef max_shown_inc_cmd;
   XPLMCommandRef max_shown_dec_cmd;
+  XPLMCommandRef max_dist_inc_cmd;
+  XPLMCommandRef max_dist_dec_cmd;
   bool show_ac_label = false;
   bool show_ap_label = false;
   bool show_ua_smoke = false;
@@ -128,8 +130,9 @@ namespace XLABEL {
   double plane_prev_lat = 0.0; // Yes, I know, real coords, but in the ocean.
   double plane_prev_lon = 0.0;
 
-  int max_shown = 28;
-
+  int max_shown = 12;
+  float max_dist = 10000.0; // Needs to be taken from settings.
+  
   // for warp
   int ai_ac_index   = 1; // maybe take closest?
   int last_ai_ac_index = 0;
@@ -195,8 +198,6 @@ namespace XLABEL {
   char name[256];
   XPLMProbeRef hProbe = XPLMCreateProbe(xplm_ProbeY);
   XPLMProbeInfo_t info = { 0 };
-
-  float max_dist = 10000.0; // Needs to be taken from settings.
   
   void get_nearest_ap(double plane_lat, double plane_lon, float& latitude, float& longitude) {
     // This is slow.

@@ -401,7 +401,7 @@ static int DrawCallback2(XPLMDrawingPhase inPhase, int inIsBefore, void * inRefc
     float latitude;
     float longitude;
     float alt = poi.alt;
-    int max_poi_dist = poi.dst; // PJB RENAME
+    int max_poi_dist = poi.dst; 
     if ( poi.update == 1 ) { // For init, and made 1 on scenery reload to trigger recalculation. Could be done there
       poi_to_local(plat, plon, poi_x, poi_y, poi_z); // only needed on scenery switch?!
       poi.x = poi_x;
@@ -571,7 +571,7 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
     //lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+"\n" );
     
     // Use cmd to tweak this (add, subtract?)
-    if ( latlon_dist >= max_poi_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
+    if ( latlon_dist >= max_poi_dist+max_dist ) {  // they can have different distances, so a short one disables a longer one after it. maybe sort on diff between distance and viewdistance?
       //break;//continue; // skip if too far away // break; // we are sorted
       continue;
     }
@@ -1344,6 +1344,7 @@ int max_shown_inc_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, v
     if (max_shown < 128) {
       max_shown += 1;
     }
+    lg.xplm( "max_shown = " + std::to_string(max_shown) + "\n" );
   }
   return 0;
 }
@@ -1353,6 +1354,27 @@ int max_shown_dec_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, v
     if (max_shown > 1) {
       max_shown -= 1;
     }
+    lg.xplm( "max_shown = " + std::to_string(max_shown) + "\n" );
+  }
+  return 0;
+}
+
+int max_dist_inc_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    if (max_dist < 100000.0) {
+      max_dist += 10000.0;
+    }
+    lg.xplm( "max_dist = " + std::to_string(max_dist) + "\n" );
+  }
+  return 0;
+}
+
+int max_dist_dec_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
+  if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
+    if (max_dist >= 10000.0) { // Should be able to get back to zero.
+      max_dist -= 10000.0;
+    }
+    lg.xplm( "max_dist = " + std::to_string(max_dist) + "\n" );
   }
   return 0;
 }
@@ -1501,6 +1523,12 @@ for (int idx : indices) {
   max_shown_dec_cmd = XPLMCreateCommand("durian/xlabel/max_shown_dec", "Show less labels");
   XPLMRegisterCommandHandler(max_shown_dec_cmd, max_shown_dec_handler, 0, (void *)0);
 
+  max_dist_inc_cmd = XPLMCreateCommand("durian/xlabel/max_dist_inc", "Increase label viz distance");
+  XPLMRegisterCommandHandler(max_dist_inc_cmd, max_dist_inc_handler, 0, (void *)0);
+
+  max_dist_dec_cmd = XPLMCreateCommand("durian/xlabel/max_dist_dec", "Decrease label viz distance");
+  XPLMRegisterCommandHandler(max_dist_dec_cmd, max_dist_dec_handler, 0, (void *)0);
+
   XPLMRegisterDrawCallback(DrawCallback1, xplm_Phase_Window, 0, NULL);
   //XPLMRegisterDrawCallback(DrawCallback2, xplm_Phase_Window, 0, NULL);// slow
   XPLMRegisterDrawCallback(DrawCallback_kdt, xplm_Phase_Window, 0, NULL);// slow
@@ -1584,6 +1612,8 @@ PLUGIN_API void	XPluginStop(void) {
   XPLMUnregisterCommandHandler(toggle_warp_forwards_cmd, toggle_warp_forwards_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(max_shown_inc_cmd, max_shown_inc_handler, 0, (void *)0);
   XPLMUnregisterCommandHandler(max_shown_dec_cmd, max_shown_dec_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(max_dist_inc_cmd, max_dist_inc_handler, 0, (void *)0);
+  XPLMUnregisterCommandHandler(max_dist_dec_cmd, max_dist_dec_handler, 0, (void *)0);
   //XPLMUnregisterFlightLoopCallback(flight_loop, NULL);
   XPLMUnregisterFlightLoopCallback(flight_loop_kdt, NULL);
   XPLMUnregisterFlightLoopCallback(smoker_loop, NULL);
