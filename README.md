@@ -25,6 +25,10 @@ This plugin has no menu or userinterface. There are seven commands you can assig
  - durian/xlabel/warp_to_next_ai: Warp user aicraft to next AI aircraft
  - durian/xlabel/warp_to_prev_ai: Warp user aircraft to previous AI aircraft
  - durian/xlabel/warp_to_closest_ai: Warp user aircraft to closest AI aircraft
+ - durian/xlabel/max_shown_inc: Show more labels (one)
+ - durian/xlabel/max_shown_dec: Show fewer labels (one)
+ - durian/xlabel/max_dist_inc: Increase label viz distance by 10 kms
+ - durian/xlabel/max_dist_dec: Decrease label viz distance by 10 kms
 
 ## POIs
 
@@ -51,6 +55,8 @@ In `Output/preferences/`, `xlabel_pois.txt`.
 56.292109, 12.854471, 0,   10000, ESTA
 56.338259, 12.895436, 0,    5000, Margretetorp
 ```
+
+The label is shown when your aircraft is closed than `DIST` (meters). 
 
 ## Smoker
 
