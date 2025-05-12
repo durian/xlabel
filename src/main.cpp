@@ -1361,7 +1361,7 @@ int max_shown_dec_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, v
 
 int max_dist_inc_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
-    if (max_dist < 100000.0) {
+    if (max_dist < 500000.0) {
       max_dist += 10000.0;
     }
     lg.xplm( "max_dist = " + std::to_string(max_dist) + "\n" );
@@ -1371,7 +1371,7 @@ int max_dist_inc_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, vo
 
 int max_dist_dec_handler( XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon ) {
   if (inPhase == xplm_CommandBegin) { // xplm_CommandContinue (1), xplm_CommandEnd (2)
-    if (max_dist >= 10000.0) { // Should be able to get back to zero.
+    if (max_dist >= 10000.0) { // Should be able to get back to zero (could even be less...)
       max_dist -= 10000.0;
     }
     lg.xplm( "max_dist = " + std::to_string(max_dist) + "\n" );
