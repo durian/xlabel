@@ -383,7 +383,26 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore, void * inR
       continue;
     }
 
-    ////float dist = sqrt( dx*dx + dz*dz ); // More exact if locally close, but double work.
+#if 0
+    float dist = sqrt( dx*dx + dz*dz ); // More exact if locally close, but double work.
+    lg.xplm( "POI: "+poi.name+", "+std::to_string(latlon_dist)+" / "+std::to_string(dist)+"\n" );
+    /*
+      Small differences...
+      20250512 14:36:51.287: XLABEL: POI: KLAX, 605.454248 / 606.280640
+      
+      20250512 14:36:51.287: XLABEL: POI: KSMO, 8789.391262 / 8763.200195
+      20250512 14:36:51.287: XLABEL: POI: KHHR, 7672.875994 / 7677.889648
+      
+      20250512 14:36:51.287: XLABEL: POI: KTOA, 17014.897436 / 16966.603516
+      20250512 14:36:51.287: XLABEL: POI: KCPM, 16850.693334 / 16858.482422
+      20250512 14:36:51.287: XLABEL: POI: KBUR, 29150.805415 / 29049.818359
+      20250512 14:36:51.288: XLABEL: POI: KVNY, 30505.519613 / 30401.912109
+      20250512 14:36:51.288: XLABEL: POI: KLGB, 28011.884394 / 28008.458984
+      20250512 14:36:51.288: XLABEL: POI: KSLI, 37642.837326 / 37645.777344
+      20250512 14:36:51.288: XLABEL: POI: KEMT, 38493.031296 / 38502.835938
+      20250512 14:36:51.288: XLABEL: POI: KFUL, 40945.281153 / 40980.511719
+    */
+#endif
     
     float acf_wrl[4] = {	
       (float)poi_x,
