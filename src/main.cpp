@@ -85,17 +85,20 @@ float height(double x, double y, double z) {
 
 // For warp (special DEG_TO_RAD!)
 #define DEG_TO_RAD_2 M_PI / 360.0
+
 typedef struct _Eulers {
   double psi;
   double the;
   double phi;
 } Eulers;
+
 typedef struct _Quaternion {
   double w;
   double x;
   double y;
   double z;
 } Quaternion;
+
 void EulersToQuaternion(Eulers ypr, Quaternion &q) {
   double spsi = sin(ypr.psi * DEG_TO_RAD_2);
   double sthe = sin(ypr.the * DEG_TO_RAD_2);
@@ -116,13 +119,16 @@ void EulersToQuaternion(Eulers ypr, Quaternion &q) {
   q.y = qy / e;
   q.z = qz / e;
 }
+
 #define RAD_TO_DEG 180.0 / M_PI
+
 double sgn(double a) {
   if (a < 0.0)
     return -1.0;
   else
     return 1.0;
 }
+
 void QuaternionToEulers(Quaternion q, Eulers &ypr) {
   double sx = q.x * q.x;
   double sy = q.y * q.y;

@@ -131,7 +131,7 @@ namespace XLABEL {
   double plane_prev_lon = 0.0;
 
   int max_shown = 12;
-  float max_dist = 10000.0; // Needs to be taken from settings.
+  float max_dist = 20000.0; // Needs to be taken from settings.
   
   // for warp
   int ai_ac_index   = 1; // maybe take closest?
