@@ -212,9 +212,9 @@ static int DrawCallback1(XPLMDrawingPhase inPhase, int inIsBefore,
 
   // Use sim/graphics/view/view_is_external for user aircraft
   for (auto i = 1; i < ai;
-       i++) { // skip 0, it is user's plane, only when at a distance?
+    i++) { // skip 0, it is user's plane, only when at a distance?
     float lx = static_cast<float>(
-        dr_tcas_pos_x.get_memory(i)); // or were these doubles
+    dr_tcas_pos_x.get_memory(i)); // or were these doubles
     float lz = static_cast<float>(dr_tcas_pos_z.get_memory(i));
     float ly = static_cast<float>(dr_tcas_pos_y.get_memory(i));
     float ele = static_cast<float>(dr_tcas_pos_ele.get_memory(i));
@@ -401,7 +401,7 @@ static int DrawCallback_kdt(XPLMDrawingPhase inPhase, int inIsBefore,
 
     // Use cmd to tweak this (add, subtract?)
     if (latlon_dist >= max_poi_dist + max_dist) {
-      continue;
+      //continue;
     }
 
 #if 0
