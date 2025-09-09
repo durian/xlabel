@@ -3,9 +3,6 @@
 //
 #include "XPLMDisplay.h"
 #include "XPLMGraphics.h"
-#include "XPLMInstance.h"
-#include "XPLMMap.h"
-#include "XPLMNavigation.h"
 #include "XPLMPlugin.h"
 #include "XPLMProcessing.h"
 #include "XPLMScenery.h"
@@ -44,20 +41,6 @@
 #include "toml.h"
 
 using namespace XLABEL;
-
-/*
-DRefFloatArray dr_tcas_pos_vx{"sim/cockpit2/tcas/targets/position/vx"};
-DRefFloatArray dr_tcas_pos_vy{"sim/cockpit2/tcas/targets/position/vy"};
-DRefFloatArray dr_tcas_pos_vz{"sim/cockpit2/tcas/targets/position/vz"};
-DRefFloatArray dr_tcas_pos_lat{"sim/cockpit2/tcas/targets/position/lat"};
-DRefFloatArray dr_tcas_pos_lon{"sim/cockpit2/tcas/targets/position/lon"};
-DRefFloatArray dr_tcas_pos_ele{"sim/cockpit2/tcas/targets/position/ele"};
-DRefFloatArray dr_tcas_pos_psi{"sim/cockpit2/tcas/targets/position/psi"};
-DRefFloatArray dr_tcas_pos_phi{"sim/cockpit2/tcas/targets/position/phi"};
-
-sim/flightmodel/ground/plugin_ground_center	float[3]	y	meters
-Location of a pt on the ground in local coords
-*/
 
 std::vector<poi> pois;
 // KD-Tree:
@@ -1748,6 +1731,15 @@ float flight_loop_kdt(float inElapsedSinceLastCall,
   MyGeoPoi query(uplat, uplon, 0.0, 0, "", "");
   pois.clear();
 
+/*
+  auto idxs1 = tree.radiusSearch(query, max_dist);
+  for (int i : idxs1) {
+    auto &p = poiList[i];
+    double latlon_dist = dist_latlon(uplat, uplon, p.lat, p.lon);
+    lg.xplm("radius search: " + std::to_string(i)+": " + p.label + "dist: " + std::to_string(latlon_dist)+"\n");
+  }
+  */
+  
   auto idxs = tree.knnSearch(query, max_shown);
   for (int i : idxs) {
     auto &p = poiList[i];
