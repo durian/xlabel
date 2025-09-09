@@ -1,0 +1,438 @@
+name: Build and Release OpenAL Shared Example Plugin
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  # Check if VERSION file changed and we need to create a release
+  check-version:
+    name: Check Version Change
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      should_release: ${{ steps.version_check.outputs.should_release }}
+      version: ${{ steps.version_check.outputs.version }}
+      tag: ${{ steps.version_check.outputs.tag }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Check if VERSION file changed
+      id: version_check
+      run: |
+        # Check if VERSION file was modified in the last commit
+        if git diff --name-only HEAD~1 HEAD | grep -q "^VERSION$"; then
+          echo "VERSION file was modified in this commit"
+          
+          if [ ! -f VERSION ]; then
+            echo "VERSION file not found!"
+            exit 1
+          fi
+          
+          VERSION=$(cat VERSION | tr -d '\n' | tr -d '\r')
+          echo "Found version: $VERSION"
+          
+          # Validate version format (basic semver check)
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "Invalid version format: $VERSION"
+            echo "Expected format: X.Y.Z or X.Y.Z-suffix (e.g., 1.0.0 or 1.0.0-beta.1)"
+            exit 1
+          fi
+          
+          TAG="v$VERSION"
+          
+          # Check if tag already exists
+          if git tag -l | grep -q "^$TAG$"; then
+            echo "Tag $TAG already exists, skipping release creation"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist, will create release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "VERSION file was not modified, no release needed"
+          echo "should_release=false" >> $GITHUB_OUTPUT
+        fi
+
+  build:
+    name: Build Plugin
+    runs-on: ${{ matrix.os }}
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'push')
+    
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            platform: windows
+            artifact_name: win.xpl
+          - os: macos-latest
+            platform: mac
+            artifact_name: mac.xpl
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: lin.xpl
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        
+        # Download and setup OpenAL SDK directly
+        Write-Host "Downloading OpenAL SDK..."
+        $openalUrl = "https://www.openal.org/downloads/oalinst.zip"
+        $openalZip = "$env:TEMP\openal.zip"
+        $openalDir = "C:\OpenAL"
+        
+        # Create OpenAL directory
+        New-Item -ItemType Directory -Force -Path $openalDir
+        
+        # Download OpenAL installer
+        Invoke-WebRequest -Uri $openalUrl -OutFile $openalZip
+        
+        # Extract OpenAL
+        Expand-Archive -Path $openalZip -DestinationPath "$openalDir\temp" -Force
+        
+        # Find and run the installer silently
+        $installer = Get-ChildItem -Path "$openalDir\temp" -Filter "*.exe" | Select-Object -First 1
+        if ($installer) {
+            Write-Host "Installing OpenAL: $($installer.FullName)"
+            Start-Process -FilePath $installer.FullName -ArgumentList "/S" -Wait -NoNewWindow
+        }
+        
+        # Also download OpenAL SDK for headers and libs
+        Write-Host "Downloading OpenAL SDK for development..."
+        $sdkUrl = "https://github.com/kcat/openal-soft/releases/download/1.23.1/openal-soft-1.23.1-bin.zip"
+        $sdkZip = "$env:TEMP\openal-sdk.zip"
+        $sdkDir = "C:\OpenAL-SDK"
+        
+        Invoke-WebRequest -Uri $sdkUrl -OutFile $sdkZip
+        Expand-Archive -Path $sdkZip -DestinationPath $sdkDir -Force
+        
+        # Set environment variable for CMake to find OpenAL
+        $openalRoot = Get-ChildItem -Path $sdkDir -Directory | Select-Object -First 1
+        if ($openalRoot) {
+            Write-Host "Setting OPENAL_ROOT to: $($openalRoot.FullName)"
+            echo "OPENAL_ROOT=$($openalRoot.FullName)" >> $env:GITHUB_ENV
+            
+            # Also set for current session
+            $env:OPENAL_ROOT = $openalRoot.FullName
+            
+            # List contents to verify structure
+            Write-Host "OpenAL SDK contents:"
+            Get-ChildItem -Path $openalRoot.FullName -Recurse -Directory | ForEach-Object { Write-Host "  $($_.FullName)" }
+        }
+        
+        Write-Host "OpenAL setup complete!"
+      shell: pwsh
+    
+    - name: Verify CMake and OpenAL installation (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Restart PowerShell session to ensure environment variables take effect
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+        
+        Write-Host "=== CMake Version ==="
+        cmake --version
+        
+        Write-Host "=== OpenAL Environment ==="
+        Write-Host "OPENAL_ROOT: $env:OPENAL_ROOT"
+        
+        if ($env:OPENAL_ROOT -and (Test-Path $env:OPENAL_ROOT)) {
+            Write-Host "OpenAL SDK structure:"
+            Get-ChildItem -Path $env:OPENAL_ROOT -Recurse | Where-Object { $_.Name -match "\.(h|lib|dll)$" } | ForEach-Object {
+                Write-Host "  $($_.FullName)"
+            }
+        } else {
+            Write-Host "OpenAL SDK not found at OPENAL_ROOT"
+        }
+        
+        Write-Host "=== System OpenAL Check ==="
+        $systemOpenAL = Get-ChildItem -Path "C:\Windows\System32" -Filter "*openal*" -ErrorAction SilentlyContinue
+        if ($systemOpenAL) {
+            Write-Host "System OpenAL files:"
+            $systemOpenAL | ForEach-Object { Write-Host "  $($_.FullName)" }
+        } else {
+            Write-Host "No system OpenAL files found"
+        }
+      shell: pwsh
+    
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake
+    
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential libopenal-dev
+    
+    - name: Build plugin (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Ensure environment variables are set correctly
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+        python build_all.py --platform ${{ matrix.platform }}
+      shell: pwsh
+    
+    - name: Build plugin (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        python build_all.py --platform ${{ matrix.platform }}
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openal-shared-example-${{ matrix.platform }}
+        path: build/${{ matrix.artifact_name }}
+        retention-days: 30
+
+  package:
+    name: Create Release Package
+    needs: build
+    runs-on: ubuntu-latest
+    if: always() && needs.build.result == 'success' && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')))
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    
+    - name: Create release package
+      run: |
+        mkdir -p release/OpenALSharedExample
+        cp artifacts/openal-shared-example-windows/win.xpl release/OpenALSharedExample/
+        cp artifacts/openal-shared-example-mac/mac.xpl release/OpenALSharedExample/
+        cp artifacts/openal-shared-example-linux/lin.xpl release/OpenALSharedExample/
+        
+        # Get version from VERSION file or tag
+        if [ -f VERSION ]; then
+          VERSION=$(cat VERSION)
+        else
+          VERSION="dev"
+        fi
+        
+        # Create installation instructions file
+        cat > release/OpenALSharedExample/README.txt << EOF
+        OpenAL Shared Example Plugin v${VERSION}
+        ========================================
+        
+        Choose the correct plugin file for your platform:
+        - Windows: win.xpl
+        - macOS: mac.xpl  
+        - Linux: lin.xpl
+        
+        Installation:
+        1. Copy the appropriate .xpl file to your X-Plane installation
+        2. Place it in: Resources/plugins/OpenALSharedExample/
+        3. Copy a sound.wav file to the same directory
+        4. Restart X-Plane
+        
+        Usage:
+        - This plugin demonstrates OpenAL sound playback in X-Plane
+        - Sound will play automatically when an aircraft is loaded
+        - Each playback will have a slightly higher pitch
+        - Check X-Plane's Log.txt for plugin status messages
+        
+        Build: $(date '+%Y-%m-%d %H:%M:%S') UTC
+        Commit: ${{ github.sha }}
+        EOF
+        
+        cd release
+        tar -czf OpenALSharedExample.tar.gz OpenALSharedExample/
+    
+    - name: Upload release package
+      uses: actions/upload-artifact@v4
+      with:
+        name: openal-shared-example-all-platforms
+        path: release/OpenALSharedExample.tar.gz
+        retention-days: 90
+
+  auto-tag-and-release:
+    name: Auto Tag and Release
+    needs: [check-version, package]
+    runs-on: ubuntu-latest
+    if: always() && needs.check-version.outputs.should_release == 'true' && needs.package.result == 'success'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Configure git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Create and push tag
+      run: |
+        TAG="${{ needs.check-version.outputs.tag }}"
+        VERSION="${{ needs.check-version.outputs.version }}"
+        
+        # Get the commit message that changed VERSION
+        COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+        
+        # Create annotated tag
+        git tag -a $TAG -m "Release $VERSION
+
+        Auto-generated release from VERSION file update.
+        Original commit: $COMMIT_MSG
+        Released: $(date -u '+%Y-%m-%d %H:%M:%S') UTC"
+        
+        # Push the tag
+        git push origin $TAG
+        
+        echo "✅ Created and pushed tag: $TAG"
+    
+    - name: Download release package
+      uses: actions/download-artifact@v4
+      with:
+        name: openal-shared-example-all-platforms
+        path: ./
+    
+    - name: Download individual platform artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        VERSION="${{ needs.check-version.outputs.version }}"
+        
+        # Try to get previous tag for changelog
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "## What's Changed" > CHANGELOG.md
+          git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD >> CHANGELOG.md
+        else
+          echo "## What's New" > CHANGELOG.md
+          echo "- Initial release of OpenAL Shared Example Plugin" >> CHANGELOG.md
+          echo "- Demonstrates OpenAL sound playback in X-Plane" >> CHANGELOG.md
+          echo "- Automatic sound playback when aircraft is loaded" >> CHANGELOG.md
+          echo "- Cross-platform support (Windows, macOS, Linux)" >> CHANGELOG.md
+        fi
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.check-version.outputs.tag }}
+        name: OpenAL Shared Example Plugin v${{ needs.check-version.outputs.version }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: ${{ contains(needs.check-version.outputs.version, 'rc') || contains(needs.check-version.outputs.version, 'beta') || contains(needs.check-version.outputs.version, 'alpha') }}
+        files: |
+          OpenALSharedExample.tar.gz
+          artifacts/openal-shared-example-windows/win.xpl
+          artifacts/openal-shared-example-mac/mac.xpl
+          artifacts/openal-shared-example-linux/lin.xpl
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Release summary
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🚀 Release Created Successfully!
+        
+        **Version:** ${{ needs.check-version.outputs.version }}
+        **Tag:** ${{ needs.check-version.outputs.tag }}
+        **Release URL:** https://github.com/${{ github.repository }}/releases/tag/${{ needs.check-version.outputs.tag }}
+        
+        ## Files attached:
+        - OpenALSharedExample.tar.gz (All platforms package)
+        - win.xpl (Windows)
+        - mac.xpl (macOS Universal)
+        - lin.xpl (Linux)
+        
+        ## 🎉 Users can now download the release!
+        EOF
+
+  # Fallback release job for manual tag pushes
+  manual-release:
+    name: Manual Tag Release
+    needs: package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') && needs.package.result == 'success'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download release package
+      uses: actions/download-artifact@v4
+      with:
+        name: openal-shared-example-all-platforms
+        path: ./
+    
+    - name: Download individual platform artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    
+    - name: Get version and changelog info
+      id: version
+      run: |
+        # Extract version from tag (remove 'v' prefix if present)
+        VERSION=${GITHUB_REF#refs/tags/}
+        VERSION=${VERSION#v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+        # Try to get previous tag for changelog
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+        fi
+        
+        # Generate basic changelog from commits
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "## What's Changed" > CHANGELOG.md
+          git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD >> CHANGELOG.md
+        else
+          echo "## What's New" > CHANGELOG.md
+          echo "- Initial release" >> CHANGELOG.md
+        fi
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: OpenAL Shared Example Plugin v${{ steps.version.outputs.version }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+        files: |
+          OpenALSharedExample.tar.gz
+          artifacts/openal-shared-example-windows/win.xpl
+          artifacts/openal-shared-example-mac/mac.xpl
+          artifacts/openal-shared-example-linux/lin.xpl
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
