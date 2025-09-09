@@ -223,7 +223,7 @@ jobs:
         path: artifacts/
     
     - name: Create release package
-      run: 
+      run: |
         mkdir -p release/xlabel
         cp artifacts/openal-shared-example-windows/win.xpl release/xlabel/
         cp artifacts/openal-shared-example-mac/mac.xpl release/xlabel/
