@@ -53,7 +53,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: ctest -C ${{env.BUILD_TYPE}}
       
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: binaries
         path: ${{github.workspace}}/build/*.xpl
@@ -66,12 +66,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: binaries
           path: xlabel/64
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: xlabel_plugin
           path: |
