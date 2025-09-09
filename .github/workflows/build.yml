@@ -2,7 +2,8 @@ name: Build and Release OpenAL Shared Example Plugin
 
 on:
   push:
-    branches: [ main, XP12 ]
+    branches: [ FOO ]
+    # was main, XP12
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
