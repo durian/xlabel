@@ -69,24 +69,24 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: binaries
-          path: xlabel/64
+          path: x-label/64
 
       - uses: actions/upload-artifact@v4
         with:
-          name: xlabel_plugin
+          name: x-label_plugin
           path: |
-            ${{github.workspace}}/xlabel*
+            ${{github.workspace}}/x-label*
           if-no-files-found: error
 
       - name: Create plugin archive
         if: github.event_name == 'release'
-        run: zip -r xlabel.zip xlabel/
+        run: zip -r x-label.zip x-label/
 
       - name: Upload binaries to release
         if: github.event_name == 'release'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: xlabel.zip
+          file: x-label.zip
           tag: ${{ github.ref }}
           overwrite: true
