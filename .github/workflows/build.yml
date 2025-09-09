@@ -2,7 +2,7 @@ name: Build and Release OpenAL Shared Example Plugin
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, XP12 ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
@@ -223,11 +223,11 @@ jobs:
         path: artifacts/
     
     - name: Create release package
-      run: |
-        mkdir -p release/OpenALSharedExample
-        cp artifacts/openal-shared-example-windows/win.xpl release/OpenALSharedExample/
-        cp artifacts/openal-shared-example-mac/mac.xpl release/OpenALSharedExample/
-        cp artifacts/openal-shared-example-linux/lin.xpl release/OpenALSharedExample/
+      run: 
+        mkdir -p release/xlabel
+        cp artifacts/openal-shared-example-windows/win.xpl release/xlabel/
+        cp artifacts/openal-shared-example-mac/mac.xpl release/xlabel/
+        cp artifacts/openal-shared-example-linux/lin.xpl release/xlabel/
         
         # Get version from VERSION file or tag
         if [ -f VERSION ]; then
@@ -237,7 +237,7 @@ jobs:
         fi
         
         # Create installation instructions file
-        cat > release/OpenALSharedExample/README.txt << EOF
+        cat > release/xlabel/README.txt << EOF
         OpenAL Shared Example Plugin v${VERSION}
         ========================================
         
@@ -248,7 +248,7 @@ jobs:
         
         Installation:
         1. Copy the appropriate .xpl file to your X-Plane installation
-        2. Place it in: Resources/plugins/OpenALSharedExample/
+        2. Place it in: Resources/plugins/xlabel/
         3. Copy a sound.wav file to the same directory
         4. Restart X-Plane
         
@@ -263,13 +263,13 @@ jobs:
         EOF
         
         cd release
-        tar -czf OpenALSharedExample.tar.gz OpenALSharedExample/
+        tar -czf xlabel.tar.gz xlabel/
     
     - name: Upload release package
       uses: actions/upload-artifact@v4
       with:
-        name: openal-shared-example-all-platforms
-        path: release/OpenALSharedExample.tar.gz
+        name: xlabel
+        path: release/xlabel.tar.gz
         retention-days: 90
 
   auto-tag-and-release:
@@ -312,7 +312,7 @@ jobs:
     - name: Download release package
       uses: actions/download-artifact@v4
       with:
-        name: openal-shared-example-all-platforms
+        name: xlabel
         path: ./
     
     - name: Download individual platform artifacts
@@ -429,10 +429,10 @@ jobs:
         draft: false
         prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
         files: |
-          OpenALSharedExample.tar.gz
-          artifacts/openal-shared-example-windows/win.xpl
-          artifacts/openal-shared-example-mac/mac.xpl
-          artifacts/openal-shared-example-linux/lin.xpl
+          xlabel.tar.gz
+          artifacts/xlabel/win.xpl
+          artifacts/xlabel/mac.xpl
+          artifacts/xlabel/lin.xpl
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
