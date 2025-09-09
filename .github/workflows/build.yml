@@ -180,7 +180,8 @@ jobs:
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install cmake
+        # brew install cmake
+        brew uninstall cmake; brew untap local/pinned; brew install cmake
     
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
